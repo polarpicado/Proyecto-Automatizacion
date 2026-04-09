@@ -1,0 +1,254 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Envio de Mensaje').item.json.body.sessionId }}",
+        "collectionName": "chat_history",
+        "databaseName": "servicedesk"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryMongoDbChat",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        224
+      ],
+      "id": "754b91b0-51fa-4134-b475-fabea68a7ceb",
+      "name": "MongoDB Chat Memory",
+      "credentials": {
+        "mongoDb": {
+          "id": "OVY43bDYYcqEdR6l",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Crea un ticket en el sistema ServiceDesk.\n\nDevuelve un objeto JSON con la información completa del ticket creado, incluyendo el campo \"ID-ITIL\".\n\nDebes usar esta información para responder al usuario indicando el ID del ticket creado.\n\n",
+        "method": "POST",
+        "url": "http://fastapi:8000/tickets",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "solicitante",
+              "value": "={{ $json.solicitante }}"
+            },
+            {
+              "name": "tipo_solicitud",
+              "value": "={{ $json.tipo_solicitud }}"
+            },
+            {
+              "name": "prioridad",
+              "value": "={{ $json.prioridad }}"
+            },
+            {
+              "name": "estado",
+              "value": "={{ $json.estado }}"
+            },
+            {
+              "name": "modo",
+              "value": "={{ $json.modo }}"
+            },
+            {
+              "name": "sucursal",
+              "value": "={{ $json.sucursal }}"
+            },
+            {
+              "name": "categoria",
+              "value": "={{ $json.categoria }}"
+            },
+            {
+              "name": "subcategoria",
+              "value": "={{ $json.subcategoria }}"
+            },
+            {
+              "name": "articulo",
+              "value": "={{ $json.articulo }}"
+            },
+            {
+              "name": "asunto",
+              "value": "={{ $json.asunto }}"
+            },
+            {
+              "name": "descripcion_html",
+              "value": "={{ $json.descripcion_html }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        0,
+        224
+      ],
+      "id": "d652dc57-d83b-43ef-b214-991d6c64acd0",
+      "name": "crear_ticket"
+    },
+    {
+      "parameters": {
+        "model": "devstral-latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        224
+      ],
+      "id": "6706a3b2-63a3-45f7-ae3e-bb739a864c95",
+      "name": "Modelo Mistral",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "xKrV6l6INLcWYpnQ",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        336
+      ],
+      "id": "cc97ad8b-5a79-4373-a561-d36a9275785e",
+      "name": "Modelo Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Avuzc1eEOe9P0AZ6",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chatbot",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -480,
+        0
+      ],
+      "id": "209ba0bd-158f-46b3-92d3-3e67fbfaeb46",
+      "name": "Envio de Mensaje",
+      "webhookId": "b647ffef-0e04-47ed-8d5c-b6b5d0d8b53d"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"respuesta\": \"{{ $json.output.replace(/\\\\/g, '\\\\\\\\').replace(/\\\"/g, '\\\\\\\"').replace(/\\n/g, '\\\\n') }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        208,
+        0
+      ],
+      "id": "4299c8c6-af2f-4b17-be27-4cb1faf7742f",
+      "name": "Respuesta al chat"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Eres un asistente inteligente de ServiceDesk experto en soporte técnico.\n\nTu función es ayudar a los usuarios de forma fluida y profesional. Dispones de la herramienta crear_ticket.\n\n### REGLAS DE COMPORTAMIENTO:\n- Nunca generes JSON manualmente.\n- No menciones que usas herramientas.\n- **PROACTIVIDAD**: Deduce la información. No pidas confirmación de cosas obvias.\n- **PRIORIDAD**: Usa estas reglas:\n  1. Solo afecta al usuario → \"Baja\".\n  2. Afecta a toda un área → \"Normal\".\n  3. Afecta a toda la empresa → \"Alta\".\n  *Si no está claro, pregunta: \"¿Esto solo te ocurre a ti o a tus compañeros?\"*\n\n### CAMPOS DEL TICKET (crear_ticket):\n1. **solicitante** → \"usuario de ia\".\n2. **tipo_solicitud** → \"Incidente\" (falla) o \"Requerimiento\" (pedido).\n3. **prioridad** → Según reglas.\n4. **estado** → \"Abierto\".\n5. **modo** → \"Chat\".\n6. **sucursal** → \"Surco\".\n7. **CATALOGO (IMPORTANTE)**: Usa estos valores exactos para que el sistema los reconozca:\n   - Si es problema de mouse/teclado/hardware: \n     * categoria: \"TI - SOPORTE HARDWARE\"\n     * subcategoria: \"PERIFERICOS\"\n     * articulo: \"CAMBIO DE MOUSE\" (u otro valor lógico del catálogo)\n   - Si no estás seguro, usa \"TI - SOPORTE HARDWARE\" / \"OTROS\" / \"OTROS\".\n8. **asunto** → Resumen profesional (ej: \"Falla de doble clic en mouse\").\n9. **descripcion_html** → Diseño HTML limpio resumiendo el reporte.\n\n**IMPORTANTE**: Si el problema es claro, crea el ticket de inmediato y da el ID-ITIL. No pidas permiso.\n\nUsuario dijo:\n{{ $json.body.mensaje }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -208,
+        0
+      ],
+      "id": "9a07d0c0-fee7-4cf3-bf7c-e89cbd9d96c9",
+      "name": "Agente ServiceDesk"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "MongoDB Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agente ServiceDesk",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "crear_ticket": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente ServiceDesk",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Modelo Mistral": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente ServiceDesk",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Modelo Gemini": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Envio de Mensaje": {
+      "main": [
+        [
+          {
+            "node": "Agente ServiceDesk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente ServiceDesk": {
+      "main": [
+        [
+          {
+            "node": "Respuesta al chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a2ebc962-4675-4908-a2e0-d98e0137683b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b50312b720dbf6865de933d25e1e21474e0709a5e5dfd64185798427a56f6c9b"
+  },
+  "id": "YIYJI8ZkPUi59kQQ",
+  "tags": []
+}

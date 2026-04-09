@@ -1,0 +1,973 @@
+{
+    "Categoria": {
+        "SubCategoria": [
+            "Elemento"
+        ]
+    },
+    "TI - ADMINISTRACION BASES DE DATOS": {
+        "MYSQL": [
+            "ADMINISTRACION DE ALERTAS",
+            "ADMINISTRACION DE JOBS",
+            "ADMINISTRACION DE OBJETOS",
+            "ADMINISTRACION DE PARCHES",
+            "ALTA DE INICIO DE SESION",
+            "ALTA DE USUARIO",
+            "BAJA DE INICIO DE SESION",
+            "BAJA DE USUARIO",
+            "CLONACION DE BASE DE DATOS",
+            "CONFIGURACION DE PARAMETROS",
+            "CREACION DE BASE DE DATOS",
+            "LIMPIEZA DE LOG",
+            "MIGRACION DE BASE DE DATOS",
+            "OTROS",
+            "REINICIO DE SERVICIOS",
+            "RESPALDO DE BASE DE DATOS",
+            "RESTAURACION DE BASE DE DATOS",
+            "SOLICITUD DE INFORMACION",
+            "TUNNING DE BASE DE DATOS"
+        ],
+        "SQL SERVER": [
+            "ADMINISTRACION DE ALERTAS",
+            "ADMINISTRACION DE CORREO ELECTRONICO",
+            "ADMINISTRACION DE JOBS",
+            "ADMINISTRACION DE OBJETOS",
+            "ADMINISTRACION DE PARCHES",
+            "ALTA DE INICIO DE SESION",
+            "ALTA DE USUARIO",
+            "BAJA DE INICIO DE SESION",
+            "BAJA DE USUARIO",
+            "CLONACION DE BASE DE DATOS",
+            "CONFIGURACION DE PARAMETROS",
+            "CREACION DE BASE DE DATOS",
+            "LIMPIEZA DE LOG",
+            "MIGRACION DE BASE DE DATOS",
+            "OTROS",
+            "REINICIO DE SERVICIOS",
+            "RESPALDO DE BASE DE DATOS",
+            "RESTAURACION DE BASE DE DATOS",
+            "SOLICITUD DE INFORMACION",
+            "TUNNING DE BASE DE DATOS",
+            "ACCESO BASE DE DATOS"
+        ],
+        "Postgres": [
+            "Ejecucion Script"
+        ]
+    },
+    "TI - ADMINISTRACION DATA CENTER": {
+        "ALMACENAMIENTO": [
+            "INFORMATIVO",
+            "PROGRAMACION DE RESPALDO",
+            "RESPALDO A DEMANDA",
+            "RESTAURACION A DEMANDA"
+        ],
+        "ANTIVIRUS": [
+            "ADMINISTRACION DE ACTUALIZACIONES",
+            "ADMINISTRACION DE TAREAS",
+            "CONFIGURACION DE PARAMETROS",
+            "INFORMATIVO",
+            "OTROS",
+            "REINICIO DE SERVICIOS",
+            "SOLICITUD DE INFORMACION"
+        ],
+        "DIRECTORIO ACTIVO": [
+            "ALTA DE CUENTA",
+            "ALTA DE GRUPO",
+            "BAJA DE CUENTA",
+            "BAJA DE GRUPO",
+            "DESHABILITAR CUENTA",
+            "HABILITAR CUENTA",
+            "MODIFICAR PROPIEDADES DEL OBJETO",
+            "OTROS",
+            "SOLICITUD DE INFORMACION",
+            "CAMBIO DE CONTRASEÑA"
+        ],
+        "DNS": [
+            "AGREGAR REGISTRO",
+            "ELIMINAR REGISTRO",
+            "MODIFICAR PROPIEDADES DEL OBJETO",
+            "MODIFICAR REGISTRO",
+            "OTROS",
+            "SOLICITUD DE INFORMACION"
+        ],
+        "GPM": [
+            "CREAR GPO",
+            "ELIMINAR GPO",
+            "MODIFICAR GPO",
+            "OTROS",
+            "SOLICITUD DE INFORMACION"
+        ],
+        "IMPLEMENTACION": [
+            "AMBIENTE DE PRUEBAS",
+            "NUEVO SERVIDOR",
+            "OTROS",
+            "PASE A PRODUCCION"
+        ],
+        "INFRAESTRUCTURA BASE": [
+            "CONTROL DE LA TEMPERATURA Y HUMEDAD",
+            "CONTROL DEL SUMINISTRO DE ENERGIA ELECTRICA",
+            "MANTENIMIENTO PREVENTIVO DEL DATACENTER",
+            "NUEVO ESPACIO EN EL DATACENTER",
+            "OTROS",
+            "SOLICITUD DE INFORMACION"
+        ],
+        "SERVIDOR DE ARCHIVOS": [
+            "ADMINISTRACION DE CUOTAS",
+            "ADMINISTRACION DE DIRECTORIOS",
+            "ADMINISTRACION DE FILTRADO DE ARCHIVOS",
+            "ADMINISTRACION DE PERMISOS",
+            "BACKUP DE INFORMACION",
+            "CONFIGURACION DE PARAMETROS",
+            "INFORMATIVO",
+            "OTROS",
+            "REINICIO DE SERVICIOS",
+            "SOLICITUD DE INFORMACION"
+        ],
+        "SERVIDOR DE IMPRESION": [
+            "ADMINISTRACION DE IMPRESORAS",
+            "AGREGAR CONTROLADOR",
+            "AGREGAR IMPRESORA",
+            "AGREGAR NUEVO FILTRO",
+            "CONFIGURACION DE PARAMETROS",
+            "INFORMATIVO",
+            "OTROS",
+            "REINICIO DE SERVICIOS",
+            "SOLICITUD DE INFORMACION"
+        ],
+        "SERVIDORES / HARDWARE": [
+            "AGREGAR DISCOS DUROS",
+            "AGREGAR MEMORIAS RAM",
+            "AGREGAR PROCESADORES",
+            "OTROS",
+            "SOLICITUD DE INFORMACION"
+        ],
+        "SISTEMA OPERATIVO": [
+            "APLICACION DE PARCHES",
+            "CONFIGURACION DE PARAMETROS",
+            "INSTALACIONES DE APLICACIONES",
+            "INSTALACIONES DE SISTEMAS OPERATIVOS",
+            "MANTENIMIENTO PREVENTIVO",
+            "OTROS",
+            "REINICIO DE SERVIDOR",
+            "REVISION DE SERVIDOR",
+            "SOLICITUD DE INFORMACION",
+            "STATUS DE RENDIMIENTO"
+        ],
+        "VIRTUALIZACION": [
+            "BAJA DE VM",
+            "CONFIGURACION DE PARAMETROS",
+            "MIGRACION V2P/P2V/V2V",
+            "NUEVA VM",
+            "OTROS",
+            "REASIGNACION DE RECURSOS",
+            "REINICIAR VM",
+            "RESPALDO/RESTAURACION DE MV",
+            "SOLICITUD DE INFORMACION"
+        ],
+        "CORREO LOCAL": [
+            "ADMINISTRACION DE BUZONES",
+            "ADMINISTRACION DE GRUPOS DE DISTRIBUCION",
+            "BAJA DE BUZON",
+            "BAJA DE GRUPO DE DISTRIBUCION",
+            "CONFIGURACION DE PARAMETROS",
+            "CREACION DE BUZON",
+            "CREACION DE GRUPO DE DISTRIBUCION",
+            "REINICIO DE SERVICIOS",
+            "RESPALDO DE BUZONES",
+            "RESTAURACION DE BUZONES"
+        ]
+    },
+    "TI - ADMINISTRACION REDES Y COMUNICACIONES": {
+        "CABLEADO ESTRUCTURADO": [
+            "CAMBIO DE CABLE",
+            "DESHABILITAR PUNTO DE RED",
+            "DESHABILITAR PUNTO DE VOZ",
+            "HABILITAR PUNTO DE RED",
+            "HABILITAR PUNTO DE VOZ",
+            "OTROS",
+            "PRUEBA DE FUNCIONAMIENTO DE PUNTO",
+            "REUBICACION DE PUNTO",
+            "SOLICITUD DE INFORMACION"
+        ],
+        "CONFIGURACI�N DE RED": [
+            "INVITADO",
+            "RED CORPORATIVA"
+        ],
+        "FIREWALL": [
+            "ADMINISTRACION DE IP PUBLICA",
+            "ADMINISTRACION DE PUERTOS",
+            "APERTURA DE PUERTOS",
+            "CONFIGURACION DE PARAMETROS",
+            "OTROS",
+            "PUBLICACION DE SERVICIOS/PUERTOS",
+            "SOLICITUD DE INFORMACION"
+        ],
+        "INTERNET": [
+            "ADMINISTRACION DE ACCESOS",
+            "ADMINISTRACION DE REGLAS",
+            "ADMINISTRACION DE USUARIOS",
+            "OTROS",
+            "SOLICITUD DE INFORMACION"
+        ],
+        "TELEFONIA": [
+            "ADMINISTRACION DE CLAVES DE LLAMADA",
+            "ADMINISTRACION DE LAS EXTENCIONES",
+            "ALTA DE CLAVE DE LLAMADA",
+            "ALTA DE EXTENSION",
+            "BAJA DE CLAVE DE LLAMADA",
+            "BAJA DE EXTENSION",
+            "CONFIGURACI�N DE ANEXO",
+            "OTROS",
+            "SOLICITUD DE INFORMACION"
+        ],
+        "VPN": [
+            "ADMINISTRACION DE ACCESOS",
+            "BAJA DE ACCESOS",
+            "CONFIGURACION DE PARAMETROS",
+            "CREACION DE ACCESOS",
+            "OTROS",
+            "REINICIO DE SERVICIOS",
+            "RESETEO DE CONTRASENA",
+            "SOLICITUD DE INFORMACION"
+        ],
+        "PORTAL CAUTIVO VISITA": [
+            "CREACION DE USUARIO SAN ISIDRO"
+        ]
+    },
+    "TI - AURAPORTAL": {
+        "ACCESO DE USUARIO": [
+            "CONFIGURACI�N",
+            "INCIDENCIAS"
+        ],
+        "ALTA DE USUARIO": [
+            "CONFIGURACI�N"
+        ],
+        "BAJA DE USUARIO": [
+            "CONFIGURACI�N"
+        ],
+        "COMPRAS": [
+            "CONFIGURACI�N"
+        ],
+        "DESC. PLANILLAS": [
+            "CONFIGURACI�N"
+        ],
+        "ENTREGA A RENDIR ETR": [
+            "CONFIGURACI�N"
+        ],
+        "IMPORTACIONES": [
+            "CONFIGURACI�N"
+        ],
+        "INCIDENCIAS": [
+            "CONFIGURACI�N"
+        ],
+        "MOV. PERSONAL": [
+            "CONFIGURACI�N"
+        ]
+    },
+    "TI - BUSINESS INTELLIGENCE": {
+        "CONFIGURACION": [
+            "ASIGNACION DE PERMISOS",
+            "CONFIGURACION DE PARAMETROS",
+            "PUBLICACION DE REPORTE",
+            "REPORTE ANEXADO TEAMS"
+        ],
+        "CREACION / DESARROLLO": [
+            "NUEVO REPORTE",
+            "CAPACITACION"
+        ],
+        "MANTENIMIENTO / MONITOREO": [
+            "ACTUALIZACION MANUAL POR ERROR DE DATA",
+            "EJECUCION MANUAL DE JOB ERRADO",
+            "EJECUCIONDE INMATRICULACIONES",
+            "REPORTE (ERROR DE DATA)",
+            "REPORTE DE JOB ERRADO",
+            "ACTUALIZAR FICHA TECNICA REPORTE",
+            "INFORME DE MONITOREO",
+            "CARGA DE INFORMACION"
+        ],
+        "REPORTES COMERCIALES": [
+            "FALLA DE INFORMACION",
+            "PUBLICACIÓN DE REPORTE"
+        ],
+        "REPORTES GERENCIALES": [
+            "FALLA DE INFORMACION",
+            "PUBLICACIÓN DE REPORTE"
+        ],
+        "INCIDENCIA - RELACIONADA USUARIO": [
+            "CONOCIMIENTO DE LA ESTRUCTURA DEL MODELO",
+            "CONOCIMIENTO DEL DICCIONARIO DE DATOS",
+            "CONOCIMIENTO DE POWER BI"
+        ],
+        "INCIDENCIA - RELACIONADA FUNCIONAMIENTO": [
+            "FUENTE - INTRANET",
+            "FUENTE - SAP",
+            "FUENTE - LORO",
+            "FUENTE - QLEVER",
+            "INFRAESTRUCTURA - AZURE",
+            "FUENTE - LIMANA",
+            "FUENTE - SHAREPOINT",
+            "INFRAESTRUCTURA - ONPREMISE",
+            "INFRAESTRUCTURA - ENLACE"
+        ],
+        "INCIDENCIA - RELACIONADA ALCANCE": [
+            "CAMBIOS EN EL ALCANCE",
+            "REPORTE GENERADO POR USUARIO"
+        ]
+    },
+    "TI - OFFICE 365": {
+        "ADMINISTRACI�N DE LICENCIAS": [
+            "ASIGNACI�N",
+            "CONFIGURACI�N",
+            "REPORTE"
+        ],
+        "ANTISPAM": [
+            "ADMINISTRACION DE DOMINIOS",
+            "ADMINISTRACION DE HOSTS",
+            "ADMINISTRACION DE REMITENTES",
+            "CONFIGURACION DE PARAMETROS",
+            "OTROS",
+            "SOLICITUD DE INFORMACION"
+        ],
+        "CONFIGURACI�N DE CORREO": [
+            "CONFIGURACI�N",
+            "OTROS",
+            "RESTAURAR ARCHIVOS"
+        ],
+        "INCIDENCIAS": [
+            "CONFIGURACI�N"
+        ],
+        "ONEDRIVE": [
+            "CONFIGURACI�N",
+            "OTROS",
+            "RESTAURAR ARCHIVOS"
+        ],
+        "PLANNER": [
+            "CONFIGURACI�N",
+            "OTROS"
+        ],
+        "RESERVA DE SALAS": [
+            "CONFIGURACI�N",
+            "OTROS"
+        ],
+        "SHAREPOINT": [
+            "CONFIGURACI�N",
+            "OTROS",
+            "RESTAURAR ARCHIVOS"
+        ],
+        "TEAMS": [
+            "CONFIGURACI�N",
+            "OTROS"
+        ],
+        "YAMMER": [
+            "CONFIGURACI�N",
+            "OTROS"
+        ],
+        "CAPACITACION": [
+            "ONEDRIVE",
+            "TEAMS",
+            "SHAREPOINT"
+        ]
+    },
+    "TI - SERVICIO APLICACIONES ESCRITORIO": {
+        "ADRYAN PLANILLAS": [
+            "CONSULTA / ERROR"
+        ],
+        "SAMI": [
+            "CONSULTA / ERROR"
+        ],
+        "LIMANA": [
+            "REGULARIZACIONES DE COMPRAS",
+            "REGULARIZACIONES DE CLIENTES",
+            "MIGRACION DE VENTAS",
+            "DOCUMENTOS RECHAZADOS",
+            "INSTALACION",
+            "MIGRACION COBROS",
+            "ACTUALIZACION DE VERSION"
+        ]
+    },
+    "TI - SERVICIO APLICACIONES MOBILE": {
+        "FIORY": [
+            "CONSULTA / ERROR"
+        ],
+        "PANEL DE DESPACHO": [
+            "CONSULTA / ERROR"
+        ]
+    },
+    "TI - SERVICIO APLICACIONES WEB": {
+        "ADRYAN WEB": [
+            "CONSULTA / ERROR"
+        ],
+        "COMPROBANTES ELECTRONICOS": [
+            "COMPROBANTES RETENCION",
+            "FACTURACION ELECTRONICA",
+            "ACCESO PORTAL FDE",
+            "DAR DE BAJA"
+        ],
+        "DEALER PORTAL": [
+            "CONSULTA / ERROR"
+        ],
+        "INTERFACES": [
+            "OPERACIONES DE CONTABILIDAD",
+            "OPERACIONES DE TESORERIA",
+            "OPERACIONES DE VENTA",
+            "VALIDACION DE SALDOS"
+        ],
+        "INTRANET AUTOMOTRIZ": [
+            "CONSULTA / ERROR",
+            "CARGA DE PRECIO",
+            "ACTUALIZACION DE INFORMACION"
+        ],
+        "INTRANET RR.HH.": [
+            "CONSULTA / ERROR"
+        ],
+        "PORTAL DE PROVEEDORES": [
+            "CONSULTA / ERROR"
+        ],
+        "RR.HH. ENCUESTAS": [
+            "CONSULTA / ERROR"
+        ],
+        "RR.HH. EVALUACIONES": [
+            "CONSULTA / ERROR"
+        ],
+        "SALESFORCE": [
+            "ACCESOS",
+            "ASIGNACION DE PERMISOS",
+            "CARGA MASIVA (ESTADISTICA SEMANAL)",
+            "CONFIGURACION DE PARAMETROS",
+            "CREACION / MODIF. REPORTES",
+            "CREACION DE CUENTA/TIENDA ADMIN",
+            "CREACION DE NUEVO USUARIO",
+            "CREACION DE NUEVOS MODELOS",
+            "CREACION DE OBJETOS BD NUBE SF",
+            "NUEVO DISTRITO/CIUDAD",
+            "REASIGNACION DE LICENCIA",
+            "REPROCESO DE CARGA MASIVA"
+        ],
+        "SERVICE DESK": [
+            "CONFIGURACION",
+            "CREAR CATEGORIA",
+            "CREAR GRUPO",
+            "CREAR TECNICO",
+            "INFORMATIVO",
+            "MODIFICAR CATEGORIA",
+            "MODIFICAR GRUPO",
+            "MODIFICAR TECNICO",
+            "OTROS",
+            "SOLICITUD DE INFORMACION"
+        ],
+        "SIC - ASBANC": [
+            "CONSULTA / ERROR",
+            "ABONO NO MIGRADO",
+            "ABONO DUPLICADO",
+            "CAMBIO ESTADO DE ABONO",
+            "NO MIGRADO"
+        ],
+        "STA": [
+            "CONSULTA / ERROR"
+        ],
+        "WF - CONTRATOS": [
+            "ERROR / CONSULTA"
+        ],
+        "WF - ENTREGAS A RENDIR": [
+            "CAMBIO DE APROBADOR.",
+            "ERROR EN LIQUIDACION",
+            "STATUS DEL DEPOSITO"
+        ],
+        "WF - IMPORTACIONES": [
+            "CAMBIAR / ADELANTAR EL PROCESO.",
+            "ERROR EN GEN. ANTICIPO.",
+            "MODIFICACION DE VALORES.",
+            "MODIFICAR PEDIDO",
+            "STATUS"
+        ],
+        "WF - MOVIMIENTO PERSONAL": [
+            "CONSULTA / ERROR"
+        ],
+        "WMS - JDA": [
+            "CARGA DE MATERIALES",
+            "CARGA DE CLIENTES",
+            "CARGA DE PEDIDOS",
+            "ARCHIVING",
+            "MODIFICACION DATA VARIOS",
+            "REPORTE",
+            "MODIF DOBLE LECTURA RF",
+            "MODIF UBIGEO",
+            "HUELLAS",
+            "UBICACIONES",
+            "MATERIAL SIN MASCARA",
+            "CARGA DE PEDIDOS ENTRANTES",
+            "ACTUALIZACION DATOS REPORTE BI",
+            "ACTUALIZACION FOLIO (GUIA - FACTURA)",
+            "ACTUALIZACION MAESTRO MATERIAL",
+            "ACTUALIZAR STATUS PEDIDO SALIENTE",
+            "REGISTRO EVENTO - ERROR USUARIO",
+            "REGISTRO EVENTO - SAP NO RESPUESTA",
+            "SAP NO RESPUESTA EVENTO SALIDA",
+            "ACTUALIZACION AGENCIA PEDIDO Z8",
+            "ACTUALIZAR LPN EMBALADO",
+            "ADMINISTRACION DE USUARIO",
+            "ENVIO NO LIBERA UBICACION DE EMBALAJE",
+            "PEDIDO PICKING DOBLE"
+        ],
+        "TMS - DRIVIN": [
+            "CONFIG. USUARIO",
+            "CONFIG. GENERAL",
+            "CONFIG. ESQUEMA",
+            "CONFIG. DIRECCIONES",
+            "CONFIG. TRIPULACIÓN",
+            "CONFIG. ZONA",
+            "CONFIG. FLOTA",
+            "CONFIG. SOCIOS DE NEGOCIO",
+            "PLANTILLA",
+            "OTROS"
+        ],
+        "RELOJ MARCADOR": [
+            "CONFIGURACION"
+        ],
+        "CONTROL DE ASISTENCIA": [
+            "ERROR DE MIGRACION SAP - AUTO/MANUAL",
+            "ERROR GENERACION DE REPORTES",
+            "ERROR CONFIGURACION DE RELOJES",
+            "PROVEEDOR",
+            "MONITOREO/MANTENIMIENTO"
+        ],
+        "PUNTO DE VENTA": [
+            "ACTUALIZACION",
+            "REPORTE"
+        ]
+    },
+    "TI - SERVICIO SAP": {
+        "ACCESO A TRANSACCI�N": [
+            "CONFIGURACI�N"
+        ],
+        "ALTA DE USUARIO": [
+            "CONFIGURACI�N"
+        ],
+        "BAJA DE USUARIO": [
+            "CONFIGURACI�N"
+        ],
+        "BASIS": [
+            "ACCESO A TRANSACCI�N",
+            "ALTA DE USUARIO",
+            "BAJA DE USUARIO",
+            "CREACI�N DE ROLES",
+            "DESBLOQUEO",
+            "IMPRESORA",
+            "INCIDENCIAS",
+            "MODIFICACI�N DE USUARIO",
+            "RESTABLECER CONTRASE�A",
+            "TRANSPORTE DE OT"
+        ],
+        "COMPRAS": [
+            "PEDIDO DE COMPRA",
+            "REGISTRO DE FACTURAS (MIRO)"
+        ],
+        "CONTABILIDAD": [
+            "ACTIVOS FIJOS",
+            "CARGA DATOS",
+            "CONFIGURACION CTS. DIF. CAMBIO",
+            "CONFIGURACION FI",
+            "CONTABILIZACIONES.",
+            "ERROR EN TRANSACCION",
+            "INTERFACES - REG. ASIENTOS"
+        ],
+        "CONTROL GESTION": [
+            "CONFIGURACION",
+            "REPORTES"
+        ],
+        "CREACI�N DE ROLES": [
+            "CONFIGURACI�N"
+        ],
+        "INCIDENCIAS": [
+            "OTROS"
+        ],
+        "INSTALAR / CONFIGURAR APLICACI�N": [
+            "INSTALAR / CONFIGURAR APLICACI�N"
+        ],
+        "MATERIALES": [
+            "ADMINISTRACION DE MATERIALES",
+            "DATOS MESTROS",
+            "MOVIMIENTOS ALMACEN (MIGO)"
+        ],
+        "MODIFICACI�N DE USUARIO": [
+            "CONFIGURACI�N"
+        ],
+        "MODULO FM": [
+            "CONFIGURACI�N"
+        ],
+        "PM / CS": [
+            "CANIBALIZACION",
+            "GARANTIAS.",
+            "TRANSFORMACION"
+        ],
+        "REPORTES CREACION / MODIFICACION": [
+            "BI",
+            "COMPRAS.",
+            "CONFIGURACI�N",
+            "CONTABILIDAD.",
+            "VENTAS."
+        ],
+        "SAP FIORI": [
+            "CONFIGURACI�N",
+            "INCIDENCIAS",
+            "OTROS"
+        ],
+        "TESORERIA": [
+            "BANCOS",
+            "CHEQUES",
+            "CONCILIACION BANCARIA.",
+            "CONFIGURACION DE CAJA CHICA",
+            "PAGO PROVEEDORES"
+        ],
+        "TRANSPORTE DE OT": [
+            "OTROS"
+        ],
+        "VENTAS": [
+            "CUENTA CORRIENTE DE ANTICIPOS",
+            "ENTREGA - VELO",
+            "ACTUALIZACION MAESTRO CLIENTES"
+        ],
+        "GARANTIAS": [
+            "REGISTRAR LISTA DE PRECIO",
+            "ACTUALIZAR PROVEEDOR",
+            "ACTUALIZAR PRECIO MATERIAL",
+            "AMPLIAR MATERIAL",
+            "AMPLIAR CLIENTE",
+            "ACTUALIZAR CLIENTE"
+        ],
+        "GRE": [
+            "ACTUALIZAR UBIGEO",
+            "ACTUALIZAR CORREO",
+            "ACTUALIZAR DATOS"
+        ]
+    },
+    "TI - SOPORTE HARDWARE": {
+        "EQUIPOS APPLE": [
+            "IMAC",
+            "IPAD",
+            "MACBOOK"
+        ],
+        "ESTACION CLIENTE": [
+            "ACCION DEL PROVEEDOR",
+            "ASIGNACION DE ESTACION",
+            "CAMBIO DE DISCO DURO",
+            "CAMBIO DE ESTACION",
+            "CAMBIO DE MEMORIA",
+            "CAMBIO DE PLACA",
+            "MANTENIMIENTO",
+            "OTROS",
+            "PRESTAMO DE ESTACION",
+            "PROBLEMAS CON ADAPTADOR A/C"
+        ],
+        "IMPRESORA": [
+            "ACCION DEL PROVEEDOR",
+            "CAMBIO DE INSUMOS",
+            "CONECTIVIDAD",
+            "CONFIGURACION",
+            "OTROS",
+            "PROBLEMAS CON LA IMPRESION"
+        ],
+        "MONITOR": [
+            "CAMBIO",
+            "CAMBIO DE CABLE",
+            "INSTALACI�N DE RACK",
+            "OTROS",
+            "PROBLEMAS CON LA IMAGEN"
+        ],
+        "MOVILES": [
+            "ACTIVACION DE SIM CARD",
+            "ADQUISICION LINEA NUEVA",
+            "Aumento de Datos",
+            "CONFIGURACION",
+            "INCIDENCIAS",
+            "INSTALACION",
+            "OTROS",
+            "RENOVACION DE LINEA",
+            "REPOSICION DE LINEA",
+            "RESPALDO Y RESTAURACION DE DATA",
+            "ROAMING"
+        ],
+        "OTROS": [
+            "APOYO A EXTERNOS",
+            "APOYO A VIPS",
+            "CAMBIO",
+            "CONECTIVIDAD",
+            "INSTALACION",
+            "OTROS",
+            "PRESTAMO"
+        ],
+        "PERIFERICOS": [
+            "CAMBIO DE MOUSE",
+            "CAMBIO DE PERIFERICO",
+            "CAMBIO DE PILAS",
+            "CAMBIO DE TECLADO",
+            "FALLA",
+            "OTROS",
+            "PR�STAMO"
+        ],
+        "PROYECTOR": [
+            "ACCION DEL PROVEEDOR",
+            "CONFIGURACION",
+            "INSTALACION",
+            "OTROS",
+            "PRESTAMO",
+            "PROBLEMAS CON EQUIPO",
+            "PROBLEMAS CON IMAGEN",
+            "PROYECTOR"
+        ],
+        "SALA MULTIMEDIA": [
+            "CONFIGURACI�N DE AUDIO",
+            "HABILITAR SALA",
+            "INCIDENCIAS",
+            "REVISI�N DE SALAS"
+        ],
+        "SCANNER": [
+            "ACCION DEL PROVEEDOR",
+            "CONECTIVIDAD",
+            "CONFIGURACION",
+            "INSTALACION",
+            "OTROS"
+        ],
+        "TABLETS": [
+            "CONFIGURACION",
+            "INSTALACION",
+            "OTROS",
+            "RESPALDO Y RESTAURACION DE DATA"
+        ],
+        "PDA": [
+            "ACTUALIZACION",
+            "CONFIGURACION",
+            "CAMBIO DE BATERIA",
+            "ACCION DEL PROVEEDOR",
+            "ASIGNACION"
+        ]
+    },
+    "TI - SOPORTE SOFTWARE": {
+        "Adobe": [
+            "Actualizaci�n",
+            "Instalaci�n"
+        ],
+        "APP ALMACENAMIENTO": [
+            "CONFIGURACION",
+            "INSTALACION",
+            "OTROS"
+        ],
+        "APP. BANCARIAS": [
+            "ACTUALIZACION",
+            "INSTALACION",
+            "OTROS"
+        ],
+        "APP. CONTABLES": [
+            "ACTUALIZACION",
+            "CONFIGURACION",
+            "INSTALACION"
+        ],
+        "APP. DE CONTROL REMOTO": [
+            "ACTUALIZACION",
+            "CONFIGURACION",
+            "INSTALACION",
+            "LICENCIAMIENTO",
+            "OTROS"
+        ],
+        "APP. DE CORREO": [
+            "ACTUALIZACION",
+            "CONFIGURACION",
+            "INSTALACION",
+            "LICENCIAMIENTO",
+            "OTROS",
+            "PROBLEMAS CON EL BUZON",
+            "PROBLEMAS CON EL PERFIL",
+            "PROBLEMAS CON PST"
+        ],
+        "APP. DE EDICION Y GRABACION DE VIDEO": [
+            "ACTUALIZACION",
+            "CONFIGURACION",
+            "INSTALACION",
+            "LICENCIAMIENTO",
+            "OTROS"
+        ],
+        "APP. DE MENSAJERIA INSTANTANEA": [
+            "ACTUALIZACION",
+            "CONFIGURACION",
+            "INSTALACION",
+            "LICENCIAMIENTO",
+            "OTROS"
+        ],
+        "APP. DE REPRODUCCION DE VIDEO": [
+            "ACTUALIZACION",
+            "CONFIGURACION",
+            "INSTALACION",
+            "LICENCIAMIENTO",
+            "OTROS"
+        ],
+        "CCTV CAMARA": [
+            "ACTUALIZACI�N",
+            "CONFIGURACI�N",
+            "INCIDENCIAS"
+        ],
+        "ESCRITORIO REMOTO": [
+            "ADMINISTRACION DE PERMISOS",
+            "CONFIGURACION DE PARAMETROS",
+            "INFORMATIVO",
+            "OTROS",
+            "REINICIO DE SERVICIOS",
+            "SOLICITUD DE INFORMACION"
+        ],
+        "FTP": [
+            "CREACION ENLACE PUBLICO",
+            "INFORMATIVO",
+            "OTROS"
+        ],
+        "MS OFFICE": [
+            "ACTUALIZACION",
+            "CONFIGURACION",
+            "INSTALACION",
+            "LICENCIAMIENTO",
+            "OTROS",
+            "PROBLEMAS CON ARCHIVOS"
+        ],
+        "NAVEGADORES": [
+            "ACTUALIZACION",
+            "CONFIGURACION",
+            "INSTALACION",
+            "OTROS",
+            "PROBLEMAS URLS"
+        ],
+        "OTROS": [
+            "ACTUALIZACION",
+            "CONFIGURACION",
+            "INSTALACION",
+            "LICENCIAMIENTO",
+            "OTROS"
+        ],
+        "POWER BI": [
+            "ACTUALIZACI�N",
+            "INSTALACI�N"
+        ],
+        "SISTEMA OPERATIVO": [
+            "ACTUALIZACION DEL SO",
+            "CONFIGURACION DEL PERFIL",
+            "CONFIGURACION DEL SISTEMA OPERATIVO",
+            "INSTALACION DE CONTROLADORES",
+            "INSTALACION DEL SISTEMA OPERATIVO",
+            "MANTENIMIENTO DEL SISTEMA OPERATIVO",
+            "OTROS",
+            "RESTAURACION DEL SISTEMA OPERATIVO"
+        ],
+        "SUNAT": [
+            "ACTUALIZAR PLE",
+            "INSTALACI�N DE PLE"
+        ],
+        "VPN": [
+            "ACTUALIZACION",
+            "CONFIGURACION",
+            "INSTALACION",
+            "OTROS"
+        ],
+        "ANTIVIRUS": [
+            "INSTALACIÓN"
+        ],
+        "OFFICE 365": [
+            "INSTALACION",
+            "REPARACION",
+            "ACTUALIZACION"
+        ],
+        "WMS": [
+            "INSTALACION",
+            "CONFIGURACION",
+            "PUTTY",
+            "LEXTEDIT"
+        ],
+        "PDA": [
+            "REINICIO",
+            "ACTUALIZACION",
+            "CONFIGURACION"
+        ]
+    },
+    "TI - SERVICIO CLIENTES": {
+        "DEALER": [
+            "CONFIGURACION",
+            "ERROR",
+            "RESTABLECER CONTRASEÑA"
+        ],
+        "PORTAL STA": [
+            "CONFIGURACION"
+        ],
+        "ASIRI": [
+            "INSTALACION",
+            "CONFIGURACION",
+            "REGISTRO DE DEALER",
+            "REGISTRAR DISPOSITIVO",
+            "RESTABLECER CONTRASEÑA",
+            "CONSULTA ACCESOS",
+            "APROBACION DE DEALER",
+            "BAJA DEFINITIVA DEALER",
+            "MODIFICACION LINEA NEGOCIO",
+            "BAJA TEMPORAL DEALER",
+            "ACTUALIZACION MASCARA",
+            "REACTIVACION ACCESO",
+            "ELIMINAR CARRITO",
+            "REPORTES"
+        ],
+        "B2B PROTUNER": [
+            "VERIFICACION DE INFORMACION",
+            "ACTUALIZACION"
+        ]
+    },
+    "TI - APOYO FUNCIONAL": {
+        "CAPACITACION": [
+            "MODULO SD",
+            "MODULO MM",
+            "MODULO VELO",
+            "MODULO AURAPORTAL",
+            "MODULO CAJA CHICA",
+            "MODULO FIORI",
+            "POWER BI (GENERAL)",
+            "POWER BI - APOLO COMERCIAL",
+            "POWER BI - QLEVER",
+            "POWER BI - INMATRICULACIONES",
+            "POWER BI - SHAREPOINT",
+            "AZURE QLEVER",
+            "AZURE APOLO",
+            "SQL",
+            "ETL",
+            "SAP HANA",
+            "SAP R3"
+        ],
+        "PRUEBA FUNCIONAL": [
+            "INICIALES",
+            "INTEGRALES"
+        ],
+        "REUNION": [
+            "TICKET ESCALADO"
+        ]
+    },
+    "TI - PORTAFOLIO DE PROYECTOS": {
+        "2. An�lisis": [
+            "No asignado"
+        ],
+        "8. Cierre": [
+            "No asignado"
+        ],
+        "5. Pruebas Integrales": [
+            "No asignado"
+        ],
+        "3. Desarrollo": [
+            "No asignado"
+        ],
+        "6. Pase a Producci�n": [
+            "No asignado"
+        ],
+        "0. En Espera": [
+            "No asignado"
+        ],
+        "7. Estabilizaci�n": [
+            "No asignado"
+        ],
+        "1. Relevamiento": [
+            "No asignado"
+        ],
+        "4. Pruebas Unitarias": [
+            "No asignado"
+        ]
+    }
+}
