@@ -1,34 +1,26 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Portal de ServiceDesk Plus para la gestión de solicitudes y tickets.">
     <title>ServiceDesk Plus - Solicitudes</title>
-    <!-- Google Fonts: Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Quill Rich Text Editor -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
 <body>
-
-    <!-- NAVBAR SUPERIOR -->
     <header class="top-navbar">
         <div class="nav-left">
             <img src="https://img.icons8.com/color/48/000000/headset.png" alt="logo" class="nav-logo">
             <nav class="nav-links">
-                <a href="#" id="nav-inicio-link" onclick="showInicio()">Inicio</a>
-                <a href="#" id="nav-dashboard-link" onclick="showDashboard()">Panel de Información</a>
-                <a href="#" id="nav-solicitudes-link" onclick="toggleView(false)">Solicitudes</a>
+                <a href="#" id="nav-inicio-link">Inicio</a>
+                <a href="#" id="nav-dashboard-link">Panel de Información</a>
+                <a href="#" id="nav-solicitudes-link">Solicitudes</a>
             </nav>
         </div>
         <div class="nav-right">
@@ -45,17 +37,16 @@
     </header>
 
     <main class="main-viewport">
-        <!-- VISTA INICIO (BIENVENIDA) -->
         <div id="view-mantenimiento" class="view-container hidden">
             <div class="welcome-section animate-in">
                 <div class="welcome-header">
-                    <h1 id="welcome-msg">¡Hola, Usuario! 👋</h1>
-                    <p>Bienvenido de nuevo al ServiceDesk. Aquí tienes un resumen de hoy.</p>
+                    <h1 id="welcome-msg">Hola, Usuario</h1>
+                    <p>Bienvenido de nuevo al ServiceDesk. Aqui tienes un resumen de hoy.</p>
                 </div>
                 <div class="summary-cards">
                     <div class="s-card blue">
                         <i class="fa-solid fa-ticket"></i>
-                        <div class="info"><h4 id="count-total">0</h4><p>Total Tickets</p></div>
+                        <div class="info"><h4 id="count-total">0</h4><p>Total de tickets</p></div>
                     </div>
                     <div class="s-card orange">
                         <i class="fa-solid fa-clock"></i>
@@ -69,39 +60,37 @@
             </div>
         </div>
 
-        <!-- VISTA PANEL DE INFORMACIÓN (GRÁFICAS) -->
         <div id="view-dashboard" class="view-container hidden dashboard-view">
             <div class="dashboard-grid animate-in">
                 <div class="chart-card">
                     <div class="chart-header">
-                        <h3>Distribución de Solicitudes</h3>
+                        <h3>Distribucion de Solicitudes</h3>
                         <select id="dashboard-metric" class="filter-select">
                             <option value="solicitante">Por Técnico/Solicitante</option>
                             <option value="modo">Por Modo</option>
                             <option value="prioridad">Por Prioridad</option>
                             <option value="categoria">Por Categoría</option>
+                            <option value="estado">Por Estado</option>
                         </select>
                     </div>
                     <canvas id="chart-metrics"></canvas>
                 </div>
                 <div class="chart-card">
-                    <h3>Estado Diario (Resueltos vs Cerrados)</h3>
+                    <h3>Estados en los últimos 7 días</h3>
                     <canvas id="chart-daily-status"></canvas>
                 </div>
                 <div class="chart-card">
-                    <h3>Tickets Recibidos (Últimos 30 días)</h3>
+                    <h3>Tickets recibidos (últimos 30 días)</h3>
                     <canvas id="chart-history-received"></canvas>
                 </div>
                 <div class="chart-card">
-                    <h3>Tickets Resueltos (Últimos 30 días)</h3>
+                    <h3>Tickets resueltos/cerrados (últimos 30 días)</h3>
                     <canvas id="chart-history-resolved"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- VISTA TABLA -->
         <div id="view-table" class="view-container">
-            <!-- La Toolbar ahora vive dentro de la vista de tabla -->
             <section class="toolbar">
                 <div class="toolbar-left">
                     <div class="view-selector-container">
@@ -129,7 +118,7 @@
                             <option value="Baja">Baja</option>
                         </select>
                         <select id="filter-category" class="filter-select">
-                            <option value="">Todas las categorías</option>
+                            <option value="">Todas las categorias</option>
                         </select>
                     </div>
                     <div class="refresh-badge">
@@ -158,12 +147,11 @@
                 </table>
                 <div id="empty-state-container" class="empty-state hidden">
                     <img src="https://sistemas.crosland.com.pe/images/Empty-state.svg" alt="Sin tickets">
-                    <h2><strong>Tómate un descanso</strong> ☕✨</h2>
+                    <h2><strong>Tomate un descanso</strong></h2>
                 </div>
             </div>
         </div>
 
-        <!-- VISTA FORMULARIO -->
         <div id="view-form" class="view-container hidden">
             <div class="form-card">
                 <div class="form-header">
@@ -172,124 +160,133 @@
                         <div id="tabs-container" class="form-tabs hidden">
                             <button type="button" class="tab-btn active" data-tab="details-section">Detalles</button>
                             <button type="button" class="tab-btn" data-tab="resolution-section">Resolución</button>
+                            <button type="button" class="tab-btn" data-tab="tracking-section">Seguimiento</button>
                         </div>
                     </div>
                     <button type="button" class="btn-close-form" id="close-form-btn">&times;</button>
                 </div>
 
                 <form id="pro-ticket-form">
-                    <!-- SECCIÓN DETALLES -->
                     <div id="details-section" class="tab-content">
                         <div class="form-grid">
-                        <div class="field ticket-id-field-container">
-                            <label>ID de Ticket</label>
-                            <input type="text" id="f-codigo" readonly class="readonly-input" placeholder="Autogenerado al guardar">
-                        </div>
-                        <div class="field">
-                            <label>Solicitante</label>
-                            <input type="text" id="f-solicitante" readonly class="readonly-input">
-                        </div>
-                        <div class="field">
-                            <label>Tipo de solicitud</label>
-                            <select id="f-tipo">
-                                <option>Requerimiento</option>
-                                <option>Incidente</option>
-                            </select>
-                        </div>
-                        <div class="field">
-                            <label>Estado</label>
-                            <select id="f-estado">
-                                <option>Abierto</option>
-                                <option>Asignado</option>
-                                <option>En espera</option>
-                                <option>En progreso</option>
-                                <option>Resuelto</option>
-                            </select>
-                        </div>
-                        <div class="field">
-                            <label>Modo</label>
-                            <select id="f-modo">
-                                <option value="">Seleccione modo...</option>
-                                <option>Chat</option>
-                                <option>Email</option>
-                                <option>Mobile App</option>
-                                <option>Phone Call</option>
-                                <option>Web Form</option>
-                            </select>
-                        </div>
-                        <div class="field">
-                            <label>Sucursal</label>
-                            <select id="f-sucursal">
-                                <option value="">Seleccione sucursal...</option>
-                                <option>Ancón</option>
-                                <option>Callao</option>
-                                <option>Casona</option>
-                                <option>Limaná</option>
-                                <option>Remoto</option>
-                                <option>San Isidro</option>
-                                <option>Santa Rosa</option>
-                                <option>Surco</option>
-                                <option>Surquillo</option>
-                            </select>
-                        </div>
-                        <div class="field">
-                            <label>Prioridad</label>
-                            <select id="f-prioridad">
-                                <option>Alta</option>
-                                <option selected>Baja</option>
-                                <option>Normal</option>
-                            </select>
+                            <div class="field ticket-id-field-container hidden">
+                                <label>ID de Ticket</label>
+                                <input type="text" id="f-codigo" readonly class="readonly-input" placeholder="Autogenerado al guardar">
+                            </div>
+                            <div class="field">
+                                <label>Solicitante</label>
+                                <input type="text" id="f-solicitante" readonly class="readonly-input">
+                            </div>
+                            <div class="field">
+                                <label>Tipo de solicitud</label>
+                                <select id="f-tipo">
+                                    <option>Requerimiento</option>
+                                    <option>Incidente</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Estado</label>
+                                <select id="f-estado">
+                                    <option>Abierto</option>
+                                    <option>Asignado</option>
+                                    <option>En espera</option>
+                                    <option>En progreso</option>
+                                    <option>Resuelto</option>
+                                    <option>Cerrado</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Modo</label>
+                                <select id="f-modo">
+                                    <option value="">Seleccione modo...</option>
+                                    <option>Chat</option>
+                                    <option>Email</option>
+                                    <option>Mobile App</option>
+                                    <option>Phone Call</option>
+                                    <option>Web Form</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Sucursal</label>
+                                <select id="f-sucursal">
+                                    <option value="">Seleccione sucursal...</option>
+                                    <option>Ancon</option>
+                                    <option>Callao</option>
+                                    <option>Casona</option>
+                                    <option>Limana</option>
+                                    <option>Remoto</option>
+                                    <option>San Isidro</option>
+                                    <option>Santa Rosa</option>
+                                    <option>Surco</option>
+                                    <option>Surquillo</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Prioridad</label>
+                                <select id="f-prioridad">
+                                    <option>Alta</option>
+                                    <option>Normal</option>
+                                    <option selected>Baja</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label>Categoría</label>
+                                <select id="f-categoria"><option value="">Seleccione...</option></select>
+                            </div>
+                            <div class="field">
+                                <label>Subcategoría</label>
+                                <select id="f-subcategoria" disabled><option value="">Seleccione categoría...</option></select>
+                            </div>
+                            <div class="field">
+                                <label>Artículo</label>
+                                <select id="f-articulo" disabled><option value="">Seleccione subcategoría...</option></select>
+                            </div>
                         </div>
 
-                        <!-- Cascada de Categorías -->
-                        <div class="field">
-                            <label>Categoría</label>
-                            <select id="f-categoria">
-                                <option value="">Seleccione...</option>
-                            </select>
+                        <div class="field full">
+                            <label>Asunto</label>
+                            <input type="text" id="f-asunto" maxlength="250" placeholder="Escriba el asunto...">
                         </div>
-                        <div class="field">
-                            <label>Subcategoría</label>
-                            <select id="f-subcategoria" disabled>
-                                <option value="">Seleccione categoría...</option>
-                            </select>
-                        </div>
-                        <div class="field">
-                            <label>Artículo</label>
-                            <select id="f-articulo" disabled>
-                                <option value="">Seleccione subcategoría...</option>
-                            </select>
-                        </div>
-                    </div>
 
-                    <div class="field full" style="margin-top:20px">
-                        <label>Asunto</label>
-                        <input type="text" id="f-asunto" maxlength="250" placeholder="Escriba el asunto...">
-                    </div>
-
-                    <div class="field full" style="margin-top:20px">
-                        <label>Descripción</label>
-                        <div id="editor-wrapper">
-                            <div id="editor-container"></div>
+                        <div class="field full">
+                            <label>Descripción</label>
+                            <div id="editor-wrapper"><div id="editor-container"></div></div>
                         </div>
-                    </div>
 
-                        <div class="field full" style="margin-top:20px">
+                        <div class="field full">
                             <label>Adjuntar archivo</label>
                             <div id="drop-zone" class="upload-drop-zone">
                                 <i class="fa-solid fa-cloud-arrow-up"></i>
-                                <p>Arrastra archivos aquí o haz clic para seleccionar</p>
-                                <input type="file" id="f-adjunto" hidden>
+                                <p>Arrastra archivos aqui o haz clic para seleccionar</p>
+                                <input type="file" id="f-adjunto" hidden multiple>
                                 <span id="file-name-display" class="file-name"></span>
                             </div>
+                            <div id="attachment-list" class="attachment-list"></div>
                         </div>
                     </div>
 
-                    <!-- SECCIÓN RESOLUCIÓN -->
                     <div id="resolution-section" class="tab-content hidden">
-                        <div class="field full">
-                            <label>Comentarios de Resolución</label>
-                            <textarea id="f-resolucion" rows="10" placeholder="Describa la solución técnica aplicada..."></textarea>
+                        <div class="field full with-padding">
+                            <label>Comentarios de resolución</label>
+                            <div id="resolution-editor"></div>
+                        </div>
+                    </div>
+
+                    <div id="tracking-section" class="tab-content hidden">
+                        <div class="tracking-layout">
+                            <section class="tracking-card">
+                                <div class="section-title">Historial del ticket</div>
+                                <div id="ticket-history" class="history-list"></div>
+                            </section>
+                            <section class="tracking-card">
+                                <div class="section-title">Comentarios</div>
+                                <div id="comments-list" class="comments-list"></div>
+                                <div class="comment-composer">
+                                    <label>Nuevo comentario</label>
+                                    <div id="comment-editor"></div>
+                                    <button type="button" class="btn-save" id="add-comment-btn">Agregar comentario</button>
+                                </div>
+                            </section>
                         </div>
                     </div>
 
@@ -303,9 +300,9 @@
         </div>
     </main>
 
-    <!-- Scripts -->
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
     <script src="script.js"></script>
 </body>
-
 </html>

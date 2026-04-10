@@ -57,6 +57,7 @@ services:
       - "8001:8000"
     volumes:
       - ./api:/app
+      - ./servicedesk/categorias.json:/servicedesk/categorias.json:ro
     depends_on:
       - mongo
 
