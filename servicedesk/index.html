@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -7,9 +7,10 @@
     <title>ServiceDesk Plus - Solicitudes</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -21,6 +22,7 @@
                 <a href="#" id="nav-inicio-link">Inicio</a>
                 <a href="#" id="nav-dashboard-link">Panel de Información</a>
                 <a href="#" id="nav-solicitudes-link">Solicitudes</a>
+                <a href="#" id="nav-soluciones-link">Soluciones</a>
             </nav>
         </div>
         <div class="nav-right">
@@ -61,6 +63,113 @@
         </div>
 
         <div id="view-dashboard" class="view-container hidden dashboard-view">
+            <section class="dashboard-filter-bar animate-in">
+                <div class="filter-group-inline">
+                    <label for="dashboard-date-from">Desde</label>
+                    <input type="date" id="dashboard-date-from" class="filter-select">
+                </div>
+                <div class="filter-group-inline">
+                    <label for="dashboard-date-to">Hasta</label>
+                    <input type="date" id="dashboard-date-to" class="filter-select">
+                </div>
+                <div class="filter-group-inline">
+                    <label for="dashboard-branch-filter">Sucursal</label>
+                    <select id="dashboard-branch-filter" class="filter-select">
+                        <option value="">Todas las sucursales</option>
+                        <option>Ancon</option>
+                        <option>Callao</option>
+                        <option>Casona</option>
+                        <option>Limana</option>
+                        <option>Remoto</option>
+                        <option>San Isidro</option>
+                        <option>Santa Rosa</option>
+                        <option>Surco</option>
+                        <option>Surquillo</option>
+                    </select>
+                </div>
+                <div class="filter-group-inline">
+                    <label for="dashboard-type-filter">Tipo</label>
+                    <select id="dashboard-type-filter" class="filter-select">
+                        <option value="">Todos los tipos</option>
+                        <option>Incidente</option>
+                        <option>Requerimiento</option>
+                    </select>
+                </div>
+                <div class="filter-group-inline">
+                    <label for="dashboard-phase-filter">Fase</label>
+                    <select id="dashboard-phase-filter" class="filter-select">
+                        <option value="">Todas las fases</option>
+                        <option value="pretest">Pretest</option>
+                        <option value="posttest">Posttest</option>
+                    </select>
+                </div>
+                <div class="dashboard-filter-actions">
+                    <button type="button" class="btn-reset" id="dashboard-clear-filters">Limpiar</button>
+                    <button type="button" class="btn-save" id="dashboard-export-btn">Exportar CSV</button>
+                </div>
+            </section>
+            <section class="thesis-kpi-grid animate-in">
+                <article class="thesis-kpi-card">
+                    <span>Tiempo promedio de atención</span>
+                    <strong id="kpi-avg-attention">--</strong>
+                </article>
+                <article class="thesis-kpi-card">
+                    <span>% FCR</span>
+                    <strong id="kpi-fcr">--</strong>
+                </article>
+                <article class="thesis-kpi-card">
+                    <span>% resueltos por chatbot</span>
+                    <strong id="kpi-chatbot">--</strong>
+                </article>
+                <article class="thesis-kpi-card">
+                    <span>% escalamiento</span>
+                    <strong id="kpi-escalation">--</strong>
+                </article>
+                <article class="thesis-kpi-card">
+                    <span>Precisión de clasificación</span>
+                    <strong id="kpi-classification">--</strong>
+                </article>
+            </section>
+            <section class="phase-comparison-card animate-in">
+                <div class="phase-comparison-header">
+                    <div>
+                        <h3>Comparativa pretest vs posttest</h3>
+                        <p>Resumen rápido del impacto medido entre ambas fases.</p>
+                    </div>
+                </div>
+                <div class="phase-comparison-table">
+                    <div class="phase-comparison-row phase-comparison-head">
+                        <span>Métrica</span>
+                        <span>Pretest</span>
+                        <span>Posttest</span>
+                    </div>
+                    <div class="phase-comparison-row">
+                        <span>Tiempo promedio</span>
+                        <strong id="phase-avg-pre">--</strong>
+                        <strong id="phase-avg-post">--</strong>
+                    </div>
+                    <div class="phase-comparison-row">
+                        <span>% FCR</span>
+                        <strong id="phase-fcr-pre">--</strong>
+                        <strong id="phase-fcr-post">--</strong>
+                    </div>
+                    <div class="phase-comparison-row">
+                        <span>% Escalamiento</span>
+                        <strong id="phase-esc-pre">--</strong>
+                        <strong id="phase-esc-post">--</strong>
+                    </div>
+                    <div class="phase-comparison-row">
+                        <span>% Resuelto por chatbot</span>
+                        <strong id="phase-chatbot-pre">--</strong>
+                        <strong id="phase-chatbot-post">--</strong>
+                    </div>
+                    <div class="phase-comparison-row">
+                        <span>Precisión clasificación</span>
+                        <strong id="phase-class-pre">--</strong>
+                        <strong id="phase-class-post">--</strong>
+                    </div>
+                </div>
+            </section>
             <div class="dashboard-grid animate-in">
                 <div class="chart-card">
                     <div class="chart-header">
@@ -152,7 +261,86 @@
             </div>
         </div>
 
-        <div id="view-form" class="view-container hidden">
+        <div id="view-solutions" class="view-container hidden">
+            <section class="solutions-shell animate-in">
+                <div class="solutions-header">
+                    <div>
+                        <span class="eyebrow">Base de conocimientos</span>
+                        <h2>Soluciones del equipo</h2>
+                        <p>Organiza procedimientos y respuestas frecuentes para que el equipo pueda encontrarlos rapido.</p>
+                    </div>
+                    <div class="solutions-actions">
+                        <button type="button" class="btn-save" id="solutions-new-btn">Nueva solucion</button>
+                    </div>
+                </div>
+
+                <div class="solutions-layout">
+                    <aside class="solutions-list-card">
+                        <div class="solutions-list-toolbar">
+                            <input type="search" id="solutions-search" placeholder="Buscar por titulo o carpeta">
+                            <button type="button" class="solution-folder-chip hidden" id="solutions-export-btn">Oculto</button>
+                            <select id="solutions-status-filter" class="filter-select hidden">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div id="solutions-folders" class="solutions-folders"></div>
+                        <div id="solutions-list" class="solutions-list"></div>
+                    </aside>
+
+                    <section class="solutions-editor-card">
+                        <div class="solutions-editor-header">
+                            <div>
+                                <h3 id="solution-form-title">Nueva solucion</h3>
+                                <p id="solution-form-subtitle">Crea un articulo simple y ordenalo dentro de una carpeta.</p>
+                            </div>
+                            <button type="button" class="btn-close-form hidden" id="solutions-reset-btn">&times;</button>
+                        </div>
+
+                        <form id="solution-form" class="solution-form">
+                            <div class="solution-grid compact">
+                                <div class="field">
+                                    <label>Carpeta</label>
+                                    <input type="text" id="s-carpeta" maxlength="120" placeholder="Ejemplo: Problemas conocidos/OneDrive">
+                                </div>
+                                <div class="field field-span-2">
+                                    <label>Titulo</label>
+                                    <input type="text" id="s-titulo" maxlength="180" placeholder="Ejemplo: Problema 0x8004de40 OneDrive">
+                                </div>
+                            </div>
+
+                            <div class="field full">
+                                <label>Descripcion</label>
+                                <div id="solution-description-editor"></div>
+                            </div>
+
+                            <div class="solution-detail-footer">
+                                <span id="solution-created-at" class="detail-chip hidden"></span>
+                                <span id="solution-updated-at" class="detail-chip hidden"></span>
+                            </div>
+
+                            <div class="legacy-solution-fields hidden" aria-hidden="true">
+                                <input type="text" id="s-categoria">
+                                <input type="text" id="s-resumen">
+                                <input type="text" id="s-etiquetas">
+                                <input type="text" id="s-palabras-clave">
+                                <a id="solution-markdown-link" href="#">Oculto</a>
+                                <select id="s-estado"><option>Publicada</option></select>
+                                <div id="solution-problem-editor"></div>
+                                <div id="solution-answer-editor"></div>
+                            </div>
+
+                            <div class="form-footer solution-footer">
+                                <span class="creation-signature" aria-hidden="true">Joao Basanta 🐻‍❄️</span>
+                                <button type="submit" class="btn-save" id="solution-save-btn">Guardar solucion</button>
+                                <button type="button" class="btn-reset" id="solution-cancel-btn">Limpiar</button>
+                                <button type="button" class="btn-cancel hidden" id="solution-delete-btn">Eliminar</button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+            </section>
+        </div>
+<div id="view-form" class="view-container hidden">
             <div class="form-card">
                 <div class="form-header">
                     <div class="header-left">
@@ -275,6 +463,51 @@
                     <div id="tracking-section" class="tab-content hidden">
                         <div class="tracking-layout">
                             <section class="tracking-card">
+                                <div class="section-title">Métricas de tesis</div>
+                                <div class="tracking-metrics-grid">
+                                    <div class="field">
+                                        <label>Fase del experimento</label>
+                                        <select id="f-fase-experimento">
+                                            <option value="">Sin definir</option>
+                                            <option value="pretest">Pretest</option>
+                                            <option value="posttest">Posttest</option>
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label>Resuelto por</label>
+                                        <select id="f-resuelto-por">
+                                            <option value="">Sin definir</option>
+                                            <option value="chatbot">Chatbot</option>
+                                            <option value="humano">Humano</option>
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label>Decisión validada</label>
+                                        <select id="f-decision-validada">
+                                            <option value="">Pendiente</option>
+                                            <option value="true">Correcta</option>
+                                            <option value="false">Incorrecta</option>
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label>Decisión del chatbot</label>
+                                        <input type="text" id="f-decision-chatbot" readonly class="readonly-input">
+                                    </div>
+                                    <div class="field">
+                                        <label>FCR</label>
+                                        <input type="text" id="f-fcr" readonly class="readonly-input">
+                                    </div>
+                                    <div class="field">
+                                        <label>Interacciones previas</label>
+                                        <input type="text" id="f-numero-interacciones" readonly class="readonly-input">
+                                    </div>
+                                    <div class="field field-span-2">
+                                        <label>Razón de decisión</label>
+                                        <textarea id="f-razon-decision" rows="3" placeholder="Opcional para trazabilidad"></textarea>
+                                    </div>
+                                </div>
+                            </section>
+                            <section class="tracking-card">
                                 <div class="section-title">Historial del ticket</div>
                                 <div id="ticket-history" class="history-list"></div>
                             </section>
@@ -291,6 +524,7 @@
                     </div>
 
                     <div class="form-footer">
+                        <span class="creation-signature" aria-hidden="true">Joao Basanta 🐻‍❄️</span>
                         <button type="submit" class="btn-save">Agregar solicitud</button>
                         <button type="button" class="btn-reset" id="reset-form-btn">Restablecer</button>
                         <button type="button" class="btn-cancel" id="cancel-form-btn">Cancelar</button>
@@ -304,5 +538,7 @@
 
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
     <script src="script.js"></script>
+    <script src="solutions-ui.js"></script>
 </body>
 </html>
+

@@ -1,0 +1,739 @@
+{
+  "name": "Sincronización",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -2048,
+        144
+      ],
+      "id": "3c7aeec0-f478-4c6f-ab37-2497599c46d3",
+      "name": "Schedule Trigger",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $('Leer Repo').first()?.json || {};\nconst files = Array.isArray(response.files) ? response.files : [];\nconst supportedExtensions = new Set(['.txt', '.md', '.json', '.csv', '.html', '.xml', '.log', '.docx', '.pdf']);\n\n// Mongo llega por input directo a este nodo\nconst previousDocs = $input.all().map(item => item.json).filter(doc => doc && doc.source_id);\n\nconst previousIndex = {};\nfor (const doc of previousDocs) {\n  previousIndex[doc.source_id] = doc;\n}\n\nconst currentIndex = {};\nconst output = [];\n\n// Archivos actuales → normalizar + detectar nuevos/modificados\nfor (const file of files) {\n  const extension = String(file.extension || '').toLowerCase();\n\n  const normalized = {\n    source_id: `repo:${file.name}`,\n    file_name: file.name,\n    original_name: file.original_name || file.name,\n    extension,\n    modified_at: file.modified_at || null,\n    size: Number(file.size || 0),\n    version_key: `${file.modified_at || ''}:${Number(file.size || 0)}`,\n    download_url: `http://fastapi:8000${file.url || ''}`,\n    relative_url: file.url || '',\n    is_supported: supportedExtensions.has(extension),\n  };\n\n  if (!normalized.is_supported) continue;\n\n  currentIndex[normalized.source_id] = normalized;\n  const previous = previousIndex[normalized.source_id];\n\n  if (!previous) {\n    output.push({\n      json: {\n        ...normalized,\n        sync_action: 'upsert',\n        change_type: 'new',\n      },\n    });\n    continue;\n  }\n\n  if (previous.version_key !== normalized.version_key) {\n    output.push({\n      json: {\n        ...normalized,\n        sync_action: 'upsert',\n        change_type: 'modified',\n      },\n    });\n  }\n}\n\n// Detectar eliminados\nfor (const [sourceId, previous] of Object.entries(previousIndex)) {\n  if (!currentIndex[sourceId]) {\n    output.push({\n      json: {\n        source_id: previous.source_id,\n        file_name: previous.file_name,\n        original_name: previous.original_name,\n        extension: previous.extension,\n        modified_at: previous.modified_at,\n        size: previous.size,\n        version_key: previous.version_key,\n        download_url: previous.download_url,\n        relative_url: previous.relative_url,\n        sync_action: 'delete',\n        change_type: 'deleted',\n      },\n    });\n  }\n}\n\n// Debug temporal\nif (output.length === 0) {\n  return [{\n    json: {\n      debug: true,\n      message: 'No hubo upserts ni deletes',\n      current_files_count: files.length,\n      previous_index_keys: Object.keys(previousIndex),\n    },\n  }];\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1424,
+        96
+      ],
+      "id": "ebdaa4ad-2bbd-43e6-8cf9-40afa837c100",
+      "name": "Detectar cambios"
+    },
+    {
+      "parameters": {
+        "url": "http://fastapi:8000/repository/files",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1872,
+        96
+      ],
+      "id": "6e455f7f-1cc7-42ee-b3ed-e43bcd3a0d75",
+      "name": "Leer Repo"
+    },
+    {
+      "parameters": {
+        "collection": "repo_sync_index",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        -1648,
+        96
+      ],
+      "id": "8581bb99-620a-4828-afbb-e43f00cc986b",
+      "name": "Leer Mongo",
+      "alwaysOutputData": true,
+      "credentials": {
+        "mongoDb": {
+          "id": "OVY43bDYYcqEdR6l",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://qdrant:6333/collections/rag_repo/points/delete?wait=true",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  filter: {\n    must: [\n      {\n        key: \"metadata.source_id\",\n        match: {\n          value: $json.source_id\n        }\n      }\n    ]\n  }\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -976,
+        -48
+      ],
+      "id": "2ada7e45-70bb-4158-bbc2-5d88d8ec11fb",
+      "name": "Qdrant Borrar"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://fastapi:8000/extract/text/by-name",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { file_name: $('Ruta Sync').item.json.file_name } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -528,
+        192
+      ],
+      "id": "6968f286-0ee8-40b6-bc56-85d6d83989dc",
+      "name": "Extraer Texto"
+    },
+    {
+      "parameters": {
+        "jsCode": "const file = $json.files?.[0];\n\nif (!file || !file.text) {\n  return {\n    json: {\n      ...$json,\n      should_index: false,\n      skip_reason: 'no_text'\n    }\n  };\n}\n\nconst text = String(file.text || '').trim();\n\nreturn {\n  json: {\n    ...$json,\n    extracted_name: file.name,\n    extracted_type: file.type,\n    extracted_characters: file.characters,\n    content: text,\n    should_index: Boolean(text)\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -304,
+        192
+      ],
+      "id": "6121504d-b322-463d-820e-e51f480213b9",
+      "name": "Procesar Texto"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        144,
+        192
+      ],
+      "id": "478ecc59-b6f5-4bdb-b55b-59246aee36fd",
+      "name": "Loop Chunks"
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 150,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        576,
+        624
+      ],
+      "id": "1f89cb82-1eee-4214-930c-e61ba7f35fde",
+      "name": "Dividir Texto"
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.content }}",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "source_id",
+                "value": "={{ $('Ruta Sync').item.json.source_id }}"
+              },
+              {
+                "name": "file_name",
+                "value": "={{ $('Loop Chunks').item.json.files[0].name }}"
+              },
+              {
+                "name": "original_name",
+                "value": "={{ $('Loop Chunks').item.json.files[0].name }}"
+              },
+              {
+                "name": "modified_at",
+                "value": "={{ $('Ruta Sync').item.json.modified_at }}"
+              },
+              {
+                "name": "version_key",
+                "value": "={{ $('Ruta Sync').item.json.modified_at + ':' +  $('Ruta Sync').item.json.size}}"
+              },
+              {
+                "name": "extension",
+                "value": "={{ $('Ruta Sync').item.json.extension.replace('.', '') }}"
+              },
+              {
+                "name": "extracted_type",
+                "value": "={{ $json.extracted_type }}"
+              },
+              {
+                "name": "extracted_characters",
+                "value": "={{ $json.extracted_characters }}"
+              },
+              {
+                "name": "document_origin",
+                "value": "repository_storage"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        496,
+        416
+      ],
+      "id": "a0a2f8bb-1e4a-4305-89e9-06133571498d",
+      "name": "Preparar Docs"
+    },
+    {
+      "parameters": {
+        "operation": "findOneAndUpdate",
+        "collection": "repo_sync_index",
+        "updateKey": "=source_id",
+        "fields": "file_name, original_name, modified_at, size, version_key, extension, download_url, relative_url",
+        "upsert": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        1088,
+        192
+      ],
+      "id": "45886227-2250-4b61-939f-1f9d91fbe65c",
+      "name": "Mongo Upsert",
+      "credentials": {
+        "mongoDb": {
+          "id": "OVY43bDYYcqEdR6l",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "collection": "repo_sync_index",
+        "query": "={\n  \"source_id\": \"{{ $('Ruta Sync').item.json.source_id }}\"\n}"
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        -752,
+        -48
+      ],
+      "id": "2b323007-9756-4e49-b786-155245bf6f32",
+      "name": "🔴 Qdrant Borrar",
+      "credentials": {
+        "mongoDb": {
+          "id": "OVY43bDYYcqEdR6l",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "mode": "list",
+          "value": "rag_repo"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        400,
+        192
+      ],
+      "id": "799cf850-931f-4ec8-81d1-a2c8653efe16",
+      "name": "🟢 Qdrant Insertar",
+      "credentials": {
+        "qdrantApi": {
+          "id": "amgwWYc7SWHHWb3h",
+          "name": "Qdrant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        368,
+        416
+      ],
+      "id": "5670ae53-d652-43a4-9c60-3a726c18f5d8",
+      "name": "🧠 Embeddings",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "xKrV6l6INLcWYpnQ",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fa72ca9a-00c1-4b9a-9ad0-00a5c972a567",
+              "name": "source_id",
+              "value": "={{ $json.metadata.source_id }}",
+              "type": "string"
+            },
+            {
+              "id": "ed437039-5870-44cb-a066-ae3eb76190f2",
+              "name": "file_name",
+              "value": "={{ $json.metadata.file_name }}",
+              "type": "string"
+            },
+            {
+              "id": "b6198867-bbf0-48fa-bee0-7920965e3c02",
+              "name": "original_name",
+              "value": "={{ $json.metadata.original_name }}",
+              "type": "string"
+            },
+            {
+              "id": "1508b420-88ea-4c94-975f-eccb2d23efe0",
+              "name": "modified_at",
+              "value": "={{ $json.metadata.modified_at }}",
+              "type": "string"
+            },
+            {
+              "id": "48fa99d7-cf69-48d2-8151-9f0acd482d5e",
+              "name": "size",
+              "value": "={{ $('Ruta Sync').item.json.size }}",
+              "type": "number"
+            },
+            {
+              "id": "bc9522ae-5dbe-412d-9cb2-8834704cf9fa",
+              "name": "version_key",
+              "value": "={{ $json.metadata.version_key }}",
+              "type": "string"
+            },
+            {
+              "id": "c1c726b4-3aa3-44ef-abed-ff5bd22d91f2",
+              "name": "extension",
+              "value": "={{ $json.metadata.extension }}",
+              "type": "string"
+            },
+            {
+              "id": "4b46775b-0961-4061-8814-209440467e95",
+              "name": "download_url",
+              "value": "={{ $('Ruta Sync').item.json.download_url }}",
+              "type": "string"
+            },
+            {
+              "id": "fbf6d9df-2280-4ded-8c13-09d366af0284",
+              "name": "relative_url",
+              "value": "={{ $('Ruta Sync').item.json.relative_url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        864,
+        192
+      ],
+      "id": "23bca5e9-5203-4eeb-a601-dec549275fe7",
+      "name": "📦 Preparar Mongo"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://qdrant:6333/collections/rag_repo/points/delete?wait=true",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  filter: {\n    must: [\n      {\n        key: \"metadata.source_id\",\n        match: {\n          value: $json.source_id\n        }\n      }\n    ]\n  }\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -752,
+        272
+      ],
+      "id": "dc5c1ca8-2b73-45d3-a628-732542dd704f",
+      "name": "Qdrant Borrar Mod"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b4a44589-bef5-4dcb-b271-f80b5ab6ee6d",
+              "leftValue": "={{ $json.change_type }}",
+              "rightValue": "modified",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -976,
+        192
+      ],
+      "id": "5aa49485-4070-44bf-8dae-f8cc97e4f6de",
+      "name": "¿Modificado?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "db12c83a-0a8a-4606-9e9a-0a73be87c452",
+              "leftValue": "={{ $json.should_index }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -80,
+        192
+      ],
+      "id": "7802a8b7-acbb-47c2-bc44-57e7d118d4e7",
+      "name": "¿Indexar?"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.sync_action }}",
+                    "rightValue": "delete",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "cbb5ab59-8566-4fac-9ec4-a0cc27b54061"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Delete"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.sync_action }}",
+                    "rightValue": "upsert",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    },
+                    "id": "4e0c3d06-5bcc-48ad-8804-564d7492a067"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Upsert"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -1200,
+        96
+      ],
+      "id": "c5ecac8c-dffb-4cc8-b171-a129843ba1e9",
+      "name": "Ruta Sync"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Leer Repo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detectar cambios": {
+      "main": [
+        [
+          {
+            "node": "Ruta Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Repo": {
+      "main": [
+        [
+          {
+            "node": "Leer Mongo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Mongo": {
+      "main": [
+        [
+          {
+            "node": "Detectar cambios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Borrar": {
+      "main": [
+        [
+          {
+            "node": "🔴 Qdrant Borrar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Texto": {
+      "main": [
+        [
+          {
+            "node": "Procesar Texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procesar Texto": {
+      "main": [
+        [
+          {
+            "node": "¿Indexar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Chunks": {
+      "main": [
+        [],
+        [
+          {
+            "node": "🟢 Qdrant Insertar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dividir Texto": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Preparar Docs",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Docs": {
+      "ai_document": [
+        [
+          {
+            "node": "🟢 Qdrant Insertar",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🟢 Qdrant Insertar": {
+      "main": [
+        [
+          {
+            "node": "Loop Chunks",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📦 Preparar Mongo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧠 Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "🟢 Qdrant Insertar",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📦 Preparar Mongo": {
+      "main": [
+        [
+          {
+            "node": "Mongo Upsert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Borrar Mod": {
+      "main": [
+        [
+          {
+            "node": "Extraer Texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Modificado?": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Borrar Mod",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extraer Texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Indexar?": {
+      "main": [
+        [
+          {
+            "node": "Loop Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ruta Sync": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Borrar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "¿Modificado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "514e25cc-34a1-414f-b7d6-702e32d432c4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b50312b720dbf6865de933d25e1e21474e0709a5e5dfd64185798427a56f6c9b"
+  },
+  "id": "690TpDEjfKOFafHN",
+  "tags": []
+}

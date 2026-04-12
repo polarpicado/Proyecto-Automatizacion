@@ -1,7 +1,10 @@
 from pathlib import Path
 import sys
 from datetime import timedelta
+from tempfile import TemporaryDirectory
 import unittest
+import io
+import zipfile
 
 from bson import ObjectId
 from fastapi.testclient import TestClient
@@ -38,8 +41,9 @@ class FakeTicketsCollection:
         return Result()
 
     def find_one(self, query):
-        if "_id" in query:
-            return self.documents.get(str(query["_id"]))
+        for document in self.documents.values():
+            if all(document.get(key) == value for key, value in query.items()):
+                return document
         return None
 
     def find(self):
@@ -84,6 +88,11 @@ class ApiTestCase(unittest.TestCase):
     def setUp(self):
         main.tickets_col = FakeTicketsCollection()
         main.counters_col = FakeCountersCollection()
+        main.solutions_col = FakeTicketsCollection()
+        main.chat_interactions_col = FakeTicketsCollection()
+        self.temp_repository = TemporaryDirectory()
+        main.REPOSITORY_DIR = Path(self.temp_repository.name)
+        main.REPOSITORY_DIR.mkdir(parents=True, exist_ok=True)
         self.client = TestClient(main.app)
         self.valid_payload = {
             "solicitante": "usuario prueba",
@@ -99,6 +108,9 @@ class ApiTestCase(unittest.TestCase):
             "descripcion_html": "<p>detalle</p>",
             "resolucion_html": ""
         }
+
+    def tearDown(self):
+        self.temp_repository.cleanup()
 
     def test_health_endpoint_is_available(self):
         response = self.client.get("/health")
@@ -206,9 +218,13 @@ class ApiTestCase(unittest.TestCase):
 
     def test_metrics_endpoint_returns_real_buckets(self):
         first = dict(self.valid_payload)
+        first["fase_experimento"] = "pretest"
         second = dict(self.valid_payload)
         second["estado"] = "Resuelto"
         second["resolucion_html"] = "<p>Listo</p>"
+        second["decision_chatbot"] = "resolver"
+        second["fue_resuelto_en_chat"] = True
+        second["fase_experimento"] = "posttest"
         self.client.post("/tickets", json=first)
         self.client.post("/tickets", json=second)
 
@@ -217,6 +233,92 @@ class ApiTestCase(unittest.TestCase):
         data = response.json()
         self.assertGreaterEqual(sum(item["count"] for item in data["received_last_30"]), 2)
         self.assertIn("Alta", data["by_metric"]["prioridad"])
+        self.assertIn("summary", data)
+        self.assertIn("phase_summary", data)
+
+    def test_ticket_export_returns_csv(self):
+        self.client.post("/tickets", json=self.valid_payload)
+
+        response = self.client.get("/tickets/export")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/csv", response.headers["content-type"])
+        self.assertIn("ID_ITIL", response.text)
+
+    def test_chat_interaction_can_be_logged(self):
+        payload = {
+            "session_id": "sess-prueba",
+            "usuario": "web-user",
+            "mensaje_usuario": "Mi mouse falla",
+            "respuesta_chatbot": "Voy a ayudarte",
+            "tiempo_inicio_atencion": main.utc_now().isoformat(),
+            "tiempo_respuesta_chatbot": 2.5,
+            "numero_interacciones": 1,
+            "decision_chatbot": "resolver",
+            "fase_experimento": "posttest",
+            "usa_contexto_rag": False,
+            "fuente_respuesta": "generativa",
+        }
+
+        created = self.client.post("/chat/interactions", json=payload)
+
+        self.assertEqual(created.status_code, 201)
+        data = created.json()
+        self.assertEqual(data["decision_chatbot"], "resolver")
+        self.assertTrue(data["fue_resuelto_en_chat"])
+
+    def test_ticket_sets_traceability_fields(self):
+        payload = dict(self.valid_payload)
+        payload["categoria_sugerida_ia"] = "TI - SOPORTE HARDWARE"
+        payload["prioridad_sugerida_ia"] = "Alta"
+        payload["fase_experimento"] = "posttest"
+
+        response = self.client.post("/tickets", json=payload)
+
+        self.assertEqual(response.status_code, 201)
+        data = response.json()
+        self.assertEqual(data["categoria_final"], payload["categoria"])
+        self.assertEqual(data["prioridad_final"], payload["prioridad"])
+        self.assertEqual(data["fase_experimento"], "posttest")
+
+    def test_create_ticket_ignores_system_managed_fields(self):
+        payload = dict(self.valid_payload)
+        payload["ID-ITIL"] = "INC-9999999"
+        payload["fcr"] = True
+        payload["tiempo_creacion_ticket"] = "2020-01-01T00:00:00Z"
+        payload["tiempo_resolucion_total"] = 99999
+
+        response = self.client.post("/tickets", json=payload)
+
+        self.assertEqual(response.status_code, 201)
+        data = response.json()
+        self.assertNotEqual(data["ID-ITIL"], "INC-9999999")
+        self.assertFalse(data["fcr"])
+        self.assertNotEqual(data["tiempo_creacion_ticket"], "2020-01-01T00:00:00Z")
+        self.assertIn("T", data["tiempo_creacion_ticket"])
+
+    def test_update_ticket_ignores_immutable_tracking_fields(self):
+        created = self.client.post("/tickets", json=self.valid_payload).json()
+
+        response = self.client.put(
+            f"/tickets/{created['_id']}",
+            json={
+                "solicitante": "Intruso",
+                "decision_chatbot": "escalar",
+                "numero_interacciones": 44,
+                "fcr": True,
+                "tiempo_resolucion_total": 1234,
+                "asunto": "Cambio permitido",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["solicitante"], created["solicitante"])
+        self.assertIsNone(data.get("decision_chatbot"))
+        self.assertEqual(data["numero_interacciones"], 0)
+        self.assertFalse(data["fcr"])
+        self.assertEqual(data["asunto"], "Cambio permitido")
 
     def test_delete_missing_ticket_returns_404(self):
         response = self.client.delete(f"/tickets/{ObjectId()}")
@@ -246,6 +348,122 @@ class ApiTestCase(unittest.TestCase):
             response.json()["detail"],
             "No se pudo cargar el catalogo de categorias en este momento.",
         )
+
+    def test_repository_file_upload_and_delete(self):
+        upload = self.client.post(
+            "/repository/files",
+            files=[("files", ("manual.txt", b"contenido base", "text/plain"))],
+        )
+        self.assertEqual(upload.status_code, 201)
+        uploaded_file = upload.json()["files"][0]
+
+        listed = self.client.get("/repository/files")
+        self.assertEqual(listed.status_code, 200)
+        self.assertEqual(listed.json()["count"], 1)
+
+        deleted = self.client.delete(f"/repository/files/{uploaded_file['name']}")
+        self.assertEqual(deleted.status_code, 200)
+        self.assertEqual(deleted.json()["msg"], "Archivo eliminado con éxito")
+
+
+    def test_extract_text_endpoint_supports_txt(self):
+        response = self.client.post(
+            "/extract/text",
+            files=[("files", ("nota.txt", b"Linea 1\n\nLinea   2", "text/plain"))],
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["count"], 1)
+        self.assertEqual(data["files"][0]["type"], "txt")
+        self.assertEqual(data["files"][0]["text"], "Linea 1\n\nLinea 2")
+
+    def test_extract_text_endpoint_supports_docx(self):
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:
+            archive.writestr(
+                "word/document.xml",
+                (
+                    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+                    "<w:body>"
+                    "<w:p><w:r><w:t>Hola</w:t></w:r></w:p>"
+                    "<w:p><w:r><w:t>Mundo DOCX</w:t></w:r></w:p>"
+                    "</w:body>"
+                    "</w:document>"
+                ),
+            )
+
+        response = self.client.post(
+            "/extract/text",
+            files=[
+                (
+                    "files",
+                    (
+                        "demo.docx",
+                        buffer.getvalue(),
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    ),
+                )
+            ],
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["files"][0]["type"], "docx")
+        self.assertIn("Hola", data["files"][0]["text"])
+        self.assertIn("Mundo DOCX", data["files"][0]["text"])
+
+    def test_extract_text_by_name_uses_repository_file(self):
+        target = main.REPOSITORY_DIR / "manual_repo.txt"
+        target.write_text("Texto base\n\npara extraer", encoding="utf-8")
+
+        response = self.client.post("/extract/text/by-name", json={"file_name": "manual_repo.txt"})
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["count"], 1)
+        self.assertEqual(data["files"][0]["name"], "manual_repo.txt")
+        self.assertEqual(data["files"][0]["type"], "txt")
+        self.assertEqual(data["files"][0]["text"], "Texto base\n\npara extraer")
+
+    def test_extract_text_by_name_returns_404_when_missing(self):
+        response = self.client.post("/extract/text/by-name", json={"file_name": "no_existe.pdf"})
+        self.assertEqual(response.status_code, 404)
+
+    def test_solution_crud_generates_markdown(self):
+        payload = {
+            "titulo": "Reiniciar impresora de almacen",
+            "carpeta": "Impresoras",
+            "descripcion_html": "<p>Apagar, esperar y volver a encender el equipo cuando la cola deja de responder.</p>",
+        }
+        created = self.client.post("/solutions", json=payload)
+        self.assertEqual(created.status_code, 201)
+        created_data = created.json()
+        self.assertEqual(created_data["carpeta"], "Impresoras")
+
+        listed = self.client.get("/solutions")
+        self.assertEqual(listed.status_code, 200)
+        self.assertEqual(listed.json()["count"], 1)
+        self.assertIn("Impresoras", listed.json()["folders"])
+
+        deleted = self.client.delete(f"/solutions/{created_data['_id']}")
+        self.assertEqual(deleted.status_code, 200)
+        self.assertEqual(deleted.json()["msg"], "Solución eliminada con éxito")
+
+    def test_solution_allows_root_page_without_folder(self):
+        payload = {
+            "titulo": "Inicio",
+            "carpeta": "",
+            "descripcion_html": "<p>Bienvenido a la base de conocimientos.</p>",
+        }
+
+        created = self.client.post("/solutions", json=payload)
+
+        self.assertEqual(created.status_code, 201)
+        data = created.json()
+        self.assertEqual(data["carpeta"], "")
+        self.assertEqual(data["titulo"], "Inicio")
 
 
 if __name__ == "__main__":

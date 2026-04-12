@@ -1,4 +1,3 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -7,31 +6,31 @@
   <title>Chat Soporte IA</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="chat-container">
+      <div class="chat-header">
+        <div class="avatar" aria-hidden="true">IA</div>
+        <div class="title">
+          <div class="name">Asistente IA</div>
+          <div class="status" id="status">En línea</div>
+        </div>
+      </div>
 
-<div class="phone-frame">
-  <div class="phone-notch"></div>
-  <div class="chat-container">
-    <div class="chat-header">
-      <div class="avatar">🤖</div>
-      <div class="title">
-        <div class="name">Asistente AI</div>
-        <div class="status" id="status">En línea</div>
+      <div id="chat-box" class="chat-box"></div>
+
+      <div class="chat-input">
+        <textarea id="input" rows="1" placeholder="Escribe un mensaje" aria-label="Mensaje"></textarea>
+        <button id="sendBtn" type="button" aria-label="Enviar mensaje">Enviar</button>
       </div>
     </div>
-
-    <div id="chat-box" class="chat-box"></div>
-
-    <div class="chat-input">
-      <input id="input" type="text" placeholder="Escribe un mensaje" />
-      <button id="sendBtn">➤</button>
-    </div>
   </div>
-</div>
 
-<script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

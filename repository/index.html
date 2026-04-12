@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Repositorio RAG</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="page-shell">
+    <section class="hero-card">
+      <div>
+        <p class="eyebrow">Repositorio documental</p>
+        <h1>Centro de archivos para RAG</h1>
+        <p class="hero-copy">Sube, organiza y descarga documentos que luego podrás usar como base para un flujo RAG en n8n.</p>
+      </div>
+      <div class="hero-badge">
+        <span id="file-count">0</span>
+        <small>archivos disponibles</small>
+      </div>
+    </section>
+
+    <section class="panel-grid">
+      <article class="panel upload-panel">
+        <h2>Subir archivos</h2>
+        <p>Arrastra documentos o selecciónalos manualmente. Ideal para PDFs, TXT, DOCX o guías internas.</p>
+        <label class="dropzone" id="dropzone">
+          <input type="file" id="file-input" multiple>
+          <span class="dropzone-title">Haz clic o arrastra archivos aquí</span>
+          <span class="dropzone-hint">Máximo recomendado: 20 MB por archivo</span>
+        </label>
+        <div id="upload-feedback" class="upload-feedback">Todavía no has seleccionado archivos.</div>
+        <button id="upload-btn" type="button" class="primary-btn">Subir al repositorio</button>
+      </article>
+
+      <article class="panel list-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Archivos disponibles</h2>
+            <p>Busca, descarga o elimina documentos del repositorio.</p>
+          </div>
+          <input id="search-input" type="search" placeholder="Buscar archivo...">
+        </div>
+        <div id="empty-state" class="empty-state">No hay archivos todavía.</div>
+        <div id="file-list" class="file-list"></div>
+      </article>
+    </section>
+  </main>
+
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+  <script src="script.js"></script>
+</body>
+</html>

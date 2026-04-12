@@ -5,5 +5,6 @@ __pycache__/
 data/
 api/__pycache__/
 api/uploads/
+api/repository_storage/
 
 .env

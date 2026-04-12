@@ -50,6 +50,14 @@ services:
     volumes:
       - ./servicedesk:/usr/share/nginx/html
 
+  repository:
+    image: nginx:latest
+    container_name: repository
+    ports:
+      - "8082:80"
+    volumes:
+      - ./repository:/usr/share/nginx/html
+
   api:
     build: ./api
     container_name: fastapi
