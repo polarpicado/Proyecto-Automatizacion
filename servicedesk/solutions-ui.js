@@ -1,4 +1,4 @@
-const SOLUTIONS_API_BASE_URL = window.SERVICEDESK_CONFIG?.apiBaseUrl || 'http://localhost:8001';
+const SOLUTIONS_API_BASE_URL = window.SERVICEDESK_CONFIG?.apiBaseUrl || 'https://caritive-corrosively-natalia.ngrok-free.dev/api';
 
 (() => {
     const view = document.getElementById('view-solutions');

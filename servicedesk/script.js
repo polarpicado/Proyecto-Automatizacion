@@ -1,4 +1,4 @@
-﻿const API_BASE_URL = window.SERVICEDESK_CONFIG?.apiBaseUrl || 'http://localhost:8001';
+﻿const API_BASE_URL = window.SERVICEDESK_CONFIG?.apiBaseUrl || 'https://caritive-corrosively-natalia.ngrok-free.dev/api';
 const DEFAULT_USER = 'Usuario Soporte';
 const CHART_COLORS = ['#0067ff', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4'];
 const STATUS_OPTIONS = ['Abierto', 'Asignado', 'En espera', 'En progreso', 'Resuelto', 'Cerrado'];

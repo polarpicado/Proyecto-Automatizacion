@@ -1,4 +1,4 @@
-const API_BASE_URL = window.REPOSITORY_CONFIG?.apiBaseUrl || 'http://localhost:8001';
+const API_BASE_URL = window.REPOSITORY_CONFIG?.apiBaseUrl || 'https://caritive-corrosively-natalia.ngrok-free.dev/api';
 
 const elements = {
   fileInput: document.getElementById('file-input'),

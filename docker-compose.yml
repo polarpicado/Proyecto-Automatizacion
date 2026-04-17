@@ -63,11 +63,27 @@ services:
     container_name: fastapi
     ports:
       - "8001:8000"
+    env_file:
+      - ./.env
     volumes:
       - ./api:/app
       - ./servicedesk/categorias.json:/servicedesk/categorias.json:ro
     depends_on:
       - mongo
+
+  gateway:
+    image: nginx:latest
+    container_name: gateway
+    ports:
+      - "8090:80"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - web
+      - servicedesk
+      - repository
+      - api
+      - n8n
 
 volumes:
   qdrant_data:

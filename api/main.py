@@ -10,14 +10,16 @@ import zipfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
+from urllib.parse import urlparse, urlunparse
 from xml.etree import ElementTree as ET
 
 from bson import ObjectId
+import httpx
 from fastapi import FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from pymongo import MongoClient, ReturnDocument
 
 from catalog import flatten_catalog, load_catalog, search_catalog_entries
@@ -86,6 +88,7 @@ FIELD_LABELS = {
     "tickets": "los tickets",
     "counters": "los correlativos",
     "solutions": "la base de conocimientos",
+    "formulario_web": "el formulario web",
     "tipo_solicitud": "El tipo de solicitud",
     "prioridad": "La prioridad",
     "estado": "El estado",
@@ -148,10 +151,29 @@ tickets_col = None
 counters_col = None
 solutions_col = None
 chat_interactions_col = None
+formulario_web_col = None
+
+
+def load_project_env_file(env_path: Path):
+    if not env_path.exists():
+        return
+
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+load_project_env_file(BASE_DIR.parent / ".env")
 
 
 def connect_to_mongo():
-    global client, db, tickets_col, counters_col, solutions_col, chat_interactions_col
+    global client, db, tickets_col, counters_col, solutions_col, chat_interactions_col, formulario_web_col
 
     mongo_uri = os.getenv("MONGO_URI", "mongodb://admin:admin123@mongo:27017/")
     try:
@@ -162,6 +184,7 @@ def connect_to_mongo():
         counters_col = db["counters"]
         solutions_col = db["solutions"]
         chat_interactions_col = db["chat_interactions"]
+        formulario_web_col = db["formulario_web"]
         logger.info("Conexión a MongoDB establecida exitosamente.")
     except Exception as exc:
         client = None
@@ -170,6 +193,7 @@ def connect_to_mongo():
         counters_col = None
         solutions_col = None
         chat_interactions_col = None
+        formulario_web_col = None
         logger.error(f"Error critico al conectar a MongoDB: {exc}")
 
 
@@ -199,6 +223,36 @@ class RepositoryExtractionRequest(BaseModel):
     file_name: str = Field(..., min_length=1, max_length=255)
 
 
+class PortfolioChatRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+    session_id: str = Field(..., alias="sessionId", min_length=1, max_length=120)
+    message: str = Field(..., min_length=1, max_length=5000)
+
+
+class PortfolioChatResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    ok: bool = True
+    session_id: str = Field(..., alias="sessionId")
+    reply: Optional[str] = None
+    raw: Any
+
+
+class FormularioWebRequest(BaseModel):
+    nombre: str = Field(..., min_length=2, max_length=120)
+    correo: str = Field(..., min_length=5, max_length=180, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    mensaje: str = Field(..., min_length=1, max_length=6000)
+
+
+class FormularioWebResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+    ok: bool = True
+    id: str
+    nombre: str
+    correo: str
+    mensaje: str
+    created_at: str = Field(..., alias="createdAt")
+
+
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -212,7 +266,7 @@ def ensure_utc_datetime(value: datetime | None) -> datetime | None:
 
 
 def require_collection(collection, resource_name: str):
-    global tickets_col, counters_col, solutions_col, chat_interactions_col
+    global tickets_col, counters_col, solutions_col, chat_interactions_col, formulario_web_col
     if collection is None:
         connect_to_mongo()
         if resource_name == "tickets":
@@ -223,6 +277,8 @@ def require_collection(collection, resource_name: str):
             collection = solutions_col
         elif resource_name == "chat_interactions":
             collection = chat_interactions_col
+        elif resource_name == "formulario_web":
+            collection = formulario_web_col
     if collection is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -249,6 +305,155 @@ def strip_html(value: str) -> str:
 
 def clean_text(value: Any) -> str:
     return str(value or "").strip()
+
+
+def parse_env_bool(name: str, default: bool = False) -> bool:
+    raw = clean_text(os.getenv(name))
+    if not raw:
+        return default
+    return raw.lower() in {"1", "true", "yes", "on"}
+
+
+def get_portfolio_webhook_url() -> str:
+    use_test = parse_env_bool("N8N_USE_TEST_WEBHOOK", default=True)
+    default_test = "http://localhost:5678/webhook-test/ce4cbd15-9477-4828-bf91-2e6195ae4de0"
+    default_prod = "http://localhost:5678/webhook/ce4cbd15-9477-4828-bf91-2e6195ae4de0"
+    test_url = clean_text(os.getenv("N8N_PORTFOLIO_WEBHOOK_TEST", default_test))
+    prod_url = clean_text(os.getenv("N8N_PORTFOLIO_WEBHOOK_PROD", default_prod))
+    chosen = test_url if use_test else prod_url
+    if not chosen:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="No se pudo resolver la URL del webhook de n8n.",
+        )
+    return chosen
+
+
+def get_portfolio_webhook_timeout() -> float:
+    raw = clean_text(os.getenv("N8N_PORTFOLIO_WEBHOOK_TIMEOUT_SECONDS", "20"))
+    try:
+        timeout = float(raw)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="La variable N8N_PORTFOLIO_WEBHOOK_TIMEOUT_SECONDS no es valida.",
+        ) from exc
+    if timeout <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="La variable N8N_PORTFOLIO_WEBHOOK_TIMEOUT_SECONDS debe ser mayor que cero.",
+        )
+    return timeout
+
+
+def extract_primary_text(raw: Any) -> Optional[str]:
+    if raw is None:
+        return None
+
+    if isinstance(raw, str):
+        text = raw.strip()
+        return text or None
+
+    if isinstance(raw, dict):
+        preferred_keys = ("respuesta", "reply", "message", "text", "output", "content", "answer")
+        for key in preferred_keys:
+            value = raw.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+
+        for value in raw.values():
+            extracted = extract_primary_text(value)
+            if extracted:
+                return extracted
+        return None
+
+    if isinstance(raw, list):
+        for item in raw:
+            extracted = extract_primary_text(item)
+            if extracted:
+                return extracted
+        return None
+
+    return None
+
+
+async def send_payload_to_webhook(url: str, payload: dict[str, Any], timeout_seconds: float) -> tuple[Any, int]:
+    timeout = httpx.Timeout(timeout_seconds, connect=min(timeout_seconds, 5.0))
+
+    def build_webhook_candidates(primary_url: str) -> list[str]:
+        candidates = [primary_url]
+        parsed = urlparse(primary_url)
+        if parsed.hostname in {"localhost", "127.0.0.1"}:
+            port = parsed.port or 5678
+            docker_netloc = f"n8n:{port}"
+            docker_url = urlunparse(parsed._replace(netloc=docker_netloc))
+            if docker_url not in candidates:
+                candidates.append(docker_url)
+        return candidates
+
+    last_timeout_error: Optional[Exception] = None
+    last_request_error: Optional[Exception] = None
+    response = None
+
+    for candidate in build_webhook_candidates(url):
+        try:
+            logger.info("Intentando webhook n8n en: %s", candidate)
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                response = await client.post(candidate, json=payload)
+            break
+        except httpx.TimeoutException as exc:
+            last_timeout_error = exc
+            logger.error("Timeout llamando webhook n8n (%s): %s", candidate, exc)
+        except httpx.RequestError as exc:
+            last_request_error = exc
+            logger.error("No se pudo conectar con webhook n8n (%s): %s", candidate, exc)
+
+    if response is None and last_timeout_error is not None:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="El webhook de n8n demoro demasiado en responder.",
+        ) from last_timeout_error
+
+    if response is None:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="No se pudo conectar con n8n.",
+        ) from last_request_error
+
+    if response.status_code < 200 or response.status_code >= 300:
+        body_preview = clean_text(response.text)[:250]
+        logger.error(
+            "Webhook n8n devolvio error status=%s url=%s body=%s",
+            response.status_code,
+            url,
+            body_preview,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"n8n devolvio un estado no exitoso ({response.status_code}).",
+        )
+
+    content_bytes = response.content or b""
+    if not content_bytes:
+        logger.error("Webhook n8n devolvio una respuesta vacia. url=%s", url)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="n8n devolvio una respuesta vacia.",
+        )
+
+    try:
+        parsed: Any = response.json()
+    except ValueError:
+        text = clean_text(response.text)
+        if not text:
+            logger.error("Webhook n8n devolvio formato no parseable y vacio. url=%s", url)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="La respuesta de n8n no tiene un formato valido.",
+            )
+        parsed = text
+
+    return parsed, response.status_code
 
 
 def normalize_title_case(value: str) -> str:
@@ -1588,6 +1793,74 @@ async def eliminar_solucion(solution_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="No se encontró la solución solicitada.")
     return {"msg": "Solución eliminada con éxito"}
+
+
+@app.post("/portfolio/chat", response_model=PortfolioChatResponse)
+async def portfolio_chat(payload: PortfolioChatRequest):
+    """
+    Reenvia el mensaje recibido al webhook de n8n (test/prod segun configuracion)
+    y devuelve una respuesta estandar para el frontend.
+    """
+    webhook_url = get_portfolio_webhook_url()
+    timeout_seconds = get_portfolio_webhook_timeout()
+    outbound_payload = {
+        "body": {
+            "sessionId": payload.session_id,
+            "message": payload.message,
+        }
+    }
+
+    logger.info(
+        "Enviando portfolio/chat a n8n. session_id=%s use_test=%s webhook=%s",
+        payload.session_id,
+        parse_env_bool("N8N_USE_TEST_WEBHOOK", default=True),
+        webhook_url,
+    )
+
+    raw_response, n8n_status = await send_payload_to_webhook(
+        url=webhook_url,
+        payload=outbound_payload,
+        timeout_seconds=timeout_seconds,
+    )
+    reply = extract_primary_text(raw_response)
+
+    logger.info(
+        "Respuesta de n8n recibida en portfolio/chat. session_id=%s status=%s reply_found=%s",
+        payload.session_id,
+        n8n_status,
+        bool(reply),
+    )
+
+    return PortfolioChatResponse(
+        ok=True,
+        session_id=payload.session_id,
+        reply=reply,
+        raw=raw_response,
+    )
+
+
+@app.post("/portfolio/formulario-web", response_model=FormularioWebResponse, status_code=status.HTTP_201_CREATED)
+async def portfolio_formulario_web(payload: FormularioWebRequest):
+    collection = require_collection(formulario_web_col, "formulario_web")
+    created_at = utc_now()
+    document = {
+        "nombre": clean_text(payload.nombre),
+        "correo": clean_text(payload.correo).lower(),
+        "mensaje": clean_text(payload.mensaje),
+        "created_at": created_at,
+    }
+
+    logger.info("Guardando formulario_web para correo=%s", document["correo"])
+    result = collection.insert_one(document)
+
+    return FormularioWebResponse(
+        ok=True,
+        id=str(result.inserted_id),
+        nombre=document["nombre"],
+        correo=document["correo"],
+        mensaje=document["mensaje"],
+        created_at=serialize_value(created_at),
+    )
 
 
 @app.get("/chat/interactions")

@@ -1,0 +1,19 @@
+﻿version: "3"
+agent:
+  authtoken: ${NGROK_AUTHTOKEN}
+tunnels:
+  api:
+    proto: http
+    addr: 8001
+  n8n:
+    proto: http
+    addr: 5678
+  web:
+    proto: http
+    addr: 8080
+  servicedesk:
+    proto: http
+    addr: 8081
+  repository:
+    proto: http
+    addr: 8082

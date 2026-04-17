@@ -3,7 +3,8 @@ const input = document.getElementById("input");
 const sendBtn = document.getElementById("sendBtn");
 const statusEl = document.getElementById("status");
 const phoneNotch = document.querySelector(".phone-notch");
-const API_BASE_URL = "http://localhost:8001";
+const PUBLIC_BASE_URL = "https://caritive-corrosively-natalia.ngrok-free.dev";
+const API_BASE_URL = `${PUBLIC_BASE_URL}/api`;
 
 let sessionId = localStorage.getItem("chat_session_id");
 if (!sessionId) {
@@ -312,7 +313,7 @@ async function sendMessage() {
   setStatus("Escribiendo...");
 
   try {
-    const res = await fetch("http://localhost:5678/webhook/chatbot", {
+    const res = await fetch(`${PUBLIC_BASE_URL}/n8n/webhook/chatbot`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mensaje: text, usuario: "web-user", sessionId })
