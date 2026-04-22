@@ -15,6 +15,8 @@ let currentTicket = null;
 let allSolutions = [];
 let editingSolutionId = null;
 let currentSolutionFolder = '';
+let ticketsLoadPromise = null;
+let animateRowsOnNextRender = true;
 
 const RICH_TEXT_FONTS = [
     { value: 'arial', label: 'Arial', family: 'Arial, sans-serif' },
@@ -1416,21 +1418,33 @@ function refreshHomeSummary() {
     document.getElementById('count-resolved').innerText = allTickets.filter((t) => ['Resuelto', 'Cerrado'].includes(t.estado)).length;
 }
 
-async function cargarTickets() {
-    try {
-        const res = await fetch(apiUrl('/tickets'));
-        if (!res.ok) throw new Error('No se pudieron cargar los tickets.');
-        allTickets = await res.json();
-        aplicarFiltros();
-        if (!document.getElementById('view-dashboard').classList.contains('hidden')) {
-            await cargarMetricas();
-            initCharts();
-        }
-        refreshHomeSummary();
-    } catch (error) {
-        console.error(error);
-        showToast('Error al cargar tickets desde la API.', 'error');
+async function cargarTickets({ animateRows = true } = {}) {
+    animateRowsOnNextRender = animateRows;
+
+    if (ticketsLoadPromise) {
+        return ticketsLoadPromise;
     }
+
+    ticketsLoadPromise = (async () => {
+        try {
+            const res = await fetch(apiUrl('/tickets'));
+            if (!res.ok) throw new Error('No se pudieron cargar los tickets.');
+            allTickets = await res.json();
+            aplicarFiltros();
+            if (!document.getElementById('view-dashboard').classList.contains('hidden')) {
+                await cargarMetricas();
+                initCharts();
+            }
+            refreshHomeSummary();
+        } catch (error) {
+            console.error(error);
+            showToast('Error al cargar tickets desde la API.', 'error');
+        } finally {
+            ticketsLoadPromise = null;
+        }
+    })();
+
+    return ticketsLoadPromise;
 }
 
 async function cargarMetricas() {
@@ -1474,10 +1488,11 @@ function aplicarFiltros() {
         return matchSearch && matchPrio && matchCat && matchView;
     });
 
-    renderTable(filtrados);
+    renderTable(filtrados, { animateRows: animateRowsOnNextRender });
+    animateRowsOnNextRender = false;
 }
 
-function renderTable(data) {
+function renderTable(data, { animateRows = false } = {}) {
     const { body, countLabel, emptyState, table } = elements.chatters;
     body.innerHTML = '';
     countLabel.innerText = `${data.length} Resultados`;
@@ -1491,12 +1506,12 @@ function renderTable(data) {
     emptyState.classList.add('hidden');
     table.classList.remove('hidden');
 
-    data.forEach((ticket) => {
+    const rowsHtml = data.map((ticket) => {
         const ticketDisplayId = ticket['ID-ITIL'] || `#${String(ticket._id).slice(-5)}`;
         const fecha = formatDate(ticket.fecha_creacion);
         const prioClass = ticket.prioridad === 'Alta' ? 'prio-alta' : ticket.prioridad === 'Normal' ? 'prio-normal' : 'prio-baja';
-        body.innerHTML += `
-            <tr class="animate-in clickable-row" onclick="prepararEdicion('${ticket._id}')">
+        return `
+            <tr class="${animateRows ? 'animate-in ' : ''}clickable-row" onclick="prepararEdicion('${ticket._id}')">
                 <td data-label="ID">${ticketDisplayId}</td>
                 <td data-label="Asunto" style="color:var(--zoho-blue); font-weight:600;">${escapeHtml(ticket.asunto)}</td>
                 <td data-label="Solicitante">${escapeHtml(ticket.solicitante || '--')}</td>
@@ -1508,7 +1523,9 @@ function renderTable(data) {
                     <i class="fa-solid fa-trash delete-btn" onclick="eliminarTicket('${ticket._id}')" title="Eliminar"></i>
                 </td>
             </tr>`;
-    });
+    }).join('');
+
+    body.innerHTML = rowsHtml;
 }
 
 async function loadTicket(id) {
@@ -1602,11 +1619,24 @@ function showTab(tabId) {
     syncTicketFormState();
 }
 
+function buildAvatarMillisecondSeed() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hour = String(now.getHours()).padStart(2, '0');
+    const minute = String(now.getMinutes()).padStart(2, '0');
+    const second = String(now.getSeconds()).padStart(2, '0');
+    const millisecond = String(now.getMilliseconds()).padStart(3, '0');
+    return `${DEFAULT_USER}-${year}${month}${day}${hour}${minute}${second}${millisecond}`;
+}
+
 function setRandomUser() {
     const photoImg = document.getElementById('user-photo');
     const solicitanteInput = document.getElementById('f-solicitante');
     solicitanteInput.value = DEFAULT_USER;
-    photoImg.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(DEFAULT_USER)}`;
+    const millisecondSeed = buildAvatarMillisecondSeed();
+    photoImg.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(millisecondSeed)}&backgroundColor=transparent`;
 }
 
 function makeLineChart(canvasId, dataPoints, label, color, textColor, gridColor) {
@@ -1991,6 +2021,10 @@ function bindEvents() {
         document.body.classList.add('dark-mode');
         themeToggle.classList.replace('fa-moon', 'fa-sun');
     }
+
+    document.getElementById('user-photo').onclick = () => {
+        setRandomUser();
+    };
 
     elements.solutions.search.oninput = renderSolutions;
     elements.solutions.statusFilter.onchange = renderSolutions;

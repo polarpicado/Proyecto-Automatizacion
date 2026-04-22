@@ -11,10 +11,10 @@
       "type": "@n8n/n8n-nodes-langchain.memoryMongoDbChat",
       "typeVersion": 1,
       "position": [
-        2272,
-        480
+        1744,
+        992
       ],
-      "id": "9f44faf7-8450-4a8e-9184-37920afba79b",
+      "id": "8e3bb467-0c84-4f71-978e-4c6e941f9e94",
       "name": "MongoDB Chat Memory",
       "credentials": {
         "mongoDb": {
@@ -25,7 +25,7 @@
     },
     {
       "parameters": {
-        "toolDescription": "Crea un ticket en el sistema ServiceDesk.\n\nLa herramienta ya tiene estos campos fijos y no debes inferirlos ni mencionarlos: solicitante, estado, modo y sucursal.\n\nSolo debes completar correctamente estos campos variables:\n- tipo_solicitud\n- prioridad\n- categoria\n- subcategoria\n- articulo\n- asunto\n- descripcion_html\n\nReglas:\n- tipo_solicitud solo puede ser \"Incidente\" o \"Requerimiento\".\n- prioridad solo puede ser \"Alta\", \"Normal\" o \"Baja\".\n- categoria, subcategoria y articulo deben ser coherentes entre sí.\n- asunto debe ser breve, profesional y específico.\n- descripcion_html debe ser HTML limpio y profesional.\n\nDevuelve un objeto JSON con la información completa del ticket creado, incluyendo el campo \"ID-ITIL\".\nDebes usar esta información para responder al usuario indicando el ID del ticket creado.\n",
+        "toolDescription": "Crea un ticket en el sistema ServiceDesk.\n\nLa herramienta ya tiene estos campos fijos y no debes inferirlos ni mencionarlos: solicitante, estado, modo y sucursal.\n\nSolo debes completar correctamente estos campos variables:\n- tipo_solicitud\n- prioridad\n- categoria\n- subcategoria\n- articulo\n- asunto\n- descripcion_html\n\nReglas:\n- tipo_solicitud solo puede ser \"Incidente\" o \"Requerimiento\".\n- prioridad solo puede ser \"Alta\", \"Normal\" o \"Baja\".\n-categoria, subcategoria y articulo son obligatorios y deben provenir de una única coincidencia completa devuelta por buscar_categoria.\n-No infieras, no reformules y no combines valores.\n-Si no ejecutaste buscar_categoria o no tienes una coincidencia válida, no uses crear_ticket.\n- asunto debe ser breve, profesional y específico.\n- descripcion_html debe ser HTML limpio y profesional.\n\nDevuelve un objeto JSON con la información completa del ticket creado, incluyendo el campo \"ID-ITIL\".\nDebes usar esta información para responder al usuario indicando el ID del ticket creado.\n",
         "method": "POST",
         "url": "http://fastapi:8000/tickets",
         "sendBody": true,
@@ -33,7 +33,7 @@
           "parameters": [
             {
               "name": "solicitante",
-              "value": "Agente IA"
+              "value": "Usuario de IA"
             },
             {
               "name": "tipo_solicitud",
@@ -74,42 +74,6 @@
             {
               "name": "descripcion_html",
               "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters10_Value', ``, 'string') }}"
-            },
-            {
-              "name": "categoria_sugerida_ia",
-              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters6_Value', ``, 'string') }}"
-            },
-            {
-              "name": "prioridad_sugerida_ia",
-              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters2_Value', ``, 'string') }}"
-            },
-            {
-              "name": "decision_chatbot",
-              "value": "escalar"
-            },
-            {
-              "name": "fue_escalado",
-              "value": "true"
-            },
-            {
-              "name": "fase_experimento",
-              "value": "posttest"
-            },
-            {
-              "name": "usa_contexto_rag",
-              "value": "false"
-            },
-            {
-              "name": "fuente_respuesta",
-              "value": "generativa"
-            },
-            {
-              "name": "numero_interacciones_previas",
-              "value": "1"
-            },
-            {
-              "name": "razon_decision",
-              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters11_Value', ``, 'string') }}"
             }
           ]
         },
@@ -118,10 +82,10 @@
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.4,
       "position": [
-        2400,
-        480
+        1872,
+        1008
       ],
-      "id": "a93a11f2-a53d-4f27-bb90-1dd858e1b7ee",
+      "id": "1f464b30-27a7-47c2-ae74-ffbe3a6017f8",
       "name": "crear_ticket"
     },
     {
@@ -132,35 +96,15 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        2144,
-        480
+        1616,
+        992
       ],
-      "id": "a2bca159-3bf4-444e-be2d-e5d7bc200432",
+      "id": "8563fe7c-0c9b-46f1-99f7-03cf2078f66a",
       "name": "Modelo Mistral",
       "credentials": {
         "mistralCloudApi": {
           "id": "xKrV6l6INLcWYpnQ",
           "name": "Mistral Cloud account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "modelName": "models/gemini-2.0-flash-lite",
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-      "typeVersion": 1,
-      "position": [
-        1920,
-        592
-      ],
-      "id": "48d4f87d-3fbe-403e-a9e3-5221bd23ebeb",
-      "name": "Modelo Gemini",
-      "credentials": {
-        "googlePalmApi": {
-          "id": "Avuzc1eEOe9P0AZ6",
-          "name": "Google Gemini(PaLM) Api account"
         }
       }
     },
@@ -174,10 +118,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        1920,
-        256
+        1392,
+        768
       ],
-      "id": "af7bdd8f-5b21-4025-997b-117c331f1217",
+      "id": "3e77071a-1825-4747-bdc3-f9d2fc6c953d",
       "name": "Envio de Mensaje",
       "webhookId": "b647ffef-0e04-47ed-8d5c-b6b5d0d8b53d"
     },
@@ -190,31 +134,30 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        2608,
-        256
+        2496,
+        768
       ],
-      "id": "dd846c02-cbe9-4c1d-a64c-d4f958e4527a",
+      "id": "852dc429-9765-4df0-9c27-108995d968c9",
       "name": "Respuesta al chat"
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "=Eres un asistente inteligente de ServiceDesk experto en soporte técnico interno.\n\nTu objetivo principal es ayudar al usuario a resolver su problema en el chat cuando sea posible.\nSi no puedes resolverlo con seguridad, si requiere intervención humana, si necesita seguimiento o si corresponde escalarlo, debes crear un ticket.\n\nDispones de las herramientas buscar_categoria y crear_ticket.\n\n## COMPORTAMIENTO\n- Responde de forma clara, profesional y natural.\n- No menciones herramientas ni procesos internos.\n- No generes JSON manualmente.\n- Sé proactivo: deduce lo razonable sin pedir confirmación innecesaria.\n- Si el problema puede resolverse con pasos simples y seguros, intenta resolverlo primero.\n- Si no se puede resolver en el chat o requiere escalamiento, crea el ticket sin pedir permiso.\n- Cuando crees un ticket, informa el ID-ITIL al usuario.\n\n## IMPORTANTE SOBRE crear_ticket\nLa herramienta crear_ticket ya tiene estos campos fijos y no debes decidirlos:\n- solicitante\n- estado\n- modo\n- sucursal\n- decision_chatbot\n- fue_escalado\n- fase_experimento\n- usa_contexto_rag\n- fuente_respuesta\n\nDebes completar correctamente estos campos:\n- tipo_solicitud\n- prioridad\n- categoria\n- subcategoria\n- articulo\n- asunto\n- descripcion_html\n- razon_decision\n\nAdemás, prioridad y categoría también quedarán registradas como sugerencia de IA, así que debes elegirlas con cuidado.\n\n## PRIORIDAD\n- Baja: afecta solo a un usuario.\n- Normal: afecta a un área o a varios usuarios.\n- Alta: afecta a gran parte de la empresa o a una operación crítica.\n\nSi no está claro el alcance, pregunta:\n\"¿Esto solo te ocurre a ti o también a otras personas?\"\n\n## TIPO DE SOLICITUD\n- Usa exactamente \"Incidente\" si es una falla, error o algo que dejó de funcionar.\n- Usa exactamente \"Requerimiento\" si es una solicitud, pedido, acceso, alta, baja o cambio.\n- Nunca uses otros valores.\n\n## USO DEL CATÁLOGO\nAntes de crear un ticket, cuando necesites clasificar categoria, subcategoria y articulo, usa buscar_categoria.\n- Debes basarte en los resultados devueltos por buscar_categoria.\n- No inventes categorías fuera del catálogo.\n- Elige una combinación coherente de categoria, subcategoria y articulo.\n- Si hay varias opciones, elige la más cercana al problema reportado.\n\nSi se trata de mouse, teclado u otro periférico, busca usando términos como:\n- mouse\n- teclado\n- periférico\n- hardware\n\n## ASUNTO\nDebe ser breve, profesional y específico.\nEjemplos:\n- \"Falla de doble clic en mouse\"\n- \"No puede acceder a OneDrive\"\n- \"Solicitud de instalación de impresora\"\n\n## DESCRIPCION_HTML\nDebe ser HTML limpio y profesional, con esta estructura:\n<h3>Resumen</h3>\n<p>...</p>\n<h3>Detalle</h3>\n<p>...</p>\n<h3>Impacto</h3>\n<p>...</p>\n\n## RAZON_DECISION\nCuando escales, razon_decision debe explicar brevemente por qué el caso no se resolvió en chat y por qué requiere atención humana o seguimiento.\n\n## REGLA FINAL\n- Si puedes resolver, responde con la solución y no crees ticket.\n- Si no puedes resolver o corresponde escalar, primero usa buscar_categoria si necesitas clasificar el caso.\n- Luego usa crear_ticket completando los campos variables indicados.\n- Después responde indicando que el caso fue registrado con su ID-ITIL.\n\nUsuario dijo:\n{{ $json.body.mensaje }}",
+        "text": "=Eres un asistente inteligente de ServiceDesk experto en soporte técnico interno.\n\nTu objetivo principal es ayudar al usuario a resolver su problema en el chat cuando sea posible.\nSi no puedes resolverlo con seguridad, si requiere intervención humana o seguimiento, debes crear un ticket.\n\nDispones de las herramientas KB, buscar_categoria y crear_ticket.\n\n## COMPORTAMIENTO\n- Responde de forma clara, profesional y natural.\n- Sé directo y evita explicaciones innecesarias.\n- Usa respuestas cortas y accionables.\n- Máximo 5-6 líneas salvo que el problema lo requiera.\n- Usa listas solo si ayudan a la claridad.\n- No menciones herramientas ni procesos internos.\n- No generes JSON manualmente.\n- Sé proactivo, pero respeta el flujo de decisión antes de escalar.\n- Para problemas técnicos comunes, intenta primero una solución básica antes de hacer preguntas adicionales, salvo que falte información crítica o casos de atención presencial.\n- Si después de intentar una solución básica no se puede resolver en el chat o requiere escalamiento, crea el ticket directamente.\n- No pidas confirmación para crear ticket.\n- No crees más de un ticket para el mismo problema en la misma conversación.\n- Cuando crees un ticket, informa el ID-ITIL al usuario.\n\n## ESCALAMIENTO AUTOMÁTICO\n\nDebes crear un ticket inmediatamente en los siguientes casos:\n\n- El usuario indica que irá o ya está yendo a soporte presencial\n- El usuario solicita atención presencial\n- El usuario decide continuar por otro canal\n- El problema no fue resuelto en el chat y requiere seguimiento\n\nIr a soporte presencial NO significa que el problema está resuelto.\nSiempre debe registrarse como ticket para trazabilidad.\n\nEn estos casos:\n- NO preguntes\n- NO cierres la conversación\n- CREA el ticket directamente\n\n## USO DE KB\nAntes de crear un ticket, si el usuario reporta un problema técnico, debes consultar KB.\n\n- Si la consulta es técnica, prioriza KB.\n- Si devuelve información suficiente, responde usando esa información.\n- No agregues información fuera del contexto.\n- No inventes causas.\n- Si no hay suficiente información, usa pasos básicos seguros.\n\n## IMPORTANTE SOBRE crear_ticket\nLa herramienta crear_ticket ya tiene estos campos fijos:\n- solicitante\n- estado\n- modo\n- sucursal\n\nSolo debes completar:\n- tipo_solicitud\n- prioridad\n- categoria\n- subcategoria\n- articulo\n- asunto\n- descripcion_html\n\n## PRIORIDAD\n- Baja: 1 usuario afectado\n- Normal: varios usuarios o área afectada\n- Alta: operación crítica afectada\n\nSi no está claro, pregunta antes de crear ticket.\n\n## TIPO DE SOLICITUD\n- \"Incidente\" si es falla\n- \"Requerimiento\" si es solicitud\n\n## USO DEL CATÁLOGO\nPara crear un ticket, primero debes ejecutar buscar_categoria. Para obtener categoria, subcategoria y articulo, debes usar buscar_categoria.\n\n- Está prohibido inferir, asumir o inventar valores.\n- Debes usar exactamente los valores devueltos por la herramienta.\n- Si no encuentras coincidencia válida, vuelve a buscar con una consulta más simple o clara.\n- Si el usuario reporta más de un problema distinto, no crees un ticket combinado. Debes tratar solo un problema por vez. Si hay varios, pide elegir uno o atiende primero el más claro, pero siempre intenta una solución básica antes de escalar salvo atención presencial.\n\n## ASUNTO\nBreve y específico.\n\n## DESCRIPCION_HTML\n<h3>Resumen</h3>\n<p>...</p>\n<h3>Detalle</h3>\n<p>...</p>\n<h3>Impacto</h3>\n<p>...</p>\n\n## FLUJO DE DECISIÓN\n\n1. Analiza el problema.\n\n2. Si es técnico:\n   - Consulta KB.\n   - Si puedes dar solución clara y segura → RESPONDE.\n   - No crees ticket aún.\n\n3. Después de responder:\n   - Si se resuelve → finaliza.\n   - Si continúa → crea ticket.\n   - Si ya existe un ticket para ese problema en esta conversación, no crees otro y comunica que está en seguimiento.\n\n4. En cualquier momento:\n   CREA ticket inmediatamente si el usuario:\n   - va o está yendo a soporte presencial\n   - solicita atención presencial\n   - decide continuar por otro canal\n   - abandona el chat sin resolver\n\nIMPORTANTE:\n- Estas condiciones tienen prioridad.\n- Ir presencial SIEMPRE implica ticket.\n\nUsuario dijo:\n{{ $json.body.mensaje }}",
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        2192,
-        256
+        1808,
+        768
       ],
-      "id": "ff20fa60-8902-403a-ae65-6d9acea99b3f",
+      "id": "f02be48e-0fb1-4111-91af-d6c263449901",
       "name": "Agente ServiceDesk"
     },
     {
       "parameters": {
-        "toolDescription": "Busca coincidencias válidas dentro del catálogo de ServiceDesk para clasificar tickets.\n\nDebes usar esta herramienta antes de crear_ticket cuando necesites determinar categoria, subcategoria y articulo.\n\nEnvía una consulta corta y clara, por ejemplo: \"mouse doble clic\", \"onedrive\", \"correo\", \"impresora\".\n\nLa respuesta incluye coincidencias válidas del catálogo. Debes elegir categoria, subcategoria y articulo a partir de esos resultados y no inventar valores fuera del catálogo.\n",
-        "method": "GET",
+        "toolDescription": "Busca coincidencias válidas dentro del catálogo de ServiceDesk para clasificar tickets.\n\nDebes usar esta herramienta antes de crear_ticket para determinar categoria, subcategoria y articulo.\n\nAntes de llamar a esta herramienta, identifica en el mensaje del usuario:\n- el recurso o sistema afectado (ej: correo, VPN, impresora, sistema interno, carpeta compartida)\n- el tipo de problema o necesidad (ej: acceso, error, instalación, falla, lentitud)\n\nCon esa información, construye una consulta corta, clara y específica basada en UN SOLO problema.\n\nSi el usuario menciona múltiples problemas:\n- separa los problemas\n- genera una consulta independiente para cada uno\n- nunca combines varios problemas en una sola consulta\n- usa primero el problema más claro o principal\n\nEjemplos de buenas consultas:\n- acceso sistema reportes\n- error autenticacion vpn\n- impresora offline\n- correo outlook acceso\n- carpeta compartida acceso\n\nEvita consultas genéricas como:\n- error\n- problema\n- no funciona\n- acceso\n\nLa respuesta incluye coincidencias válidas del catálogo.\nPrioriza el recurso principal (correo, impresora, VPN, etc.) sobre palabras genéricas como acceso, error o sistema.\nDebes elegir una sola coincidencia completa (categoria, subcategoria y articulo) exactamente como aparece en los resultados.\nNo inventes, reformules ni combines valores.\nSi ninguna coincidencia es clara, vuelve a buscar con una consulta más específica.",
         "url": "http://fastapi:8000/catalog/search",
         "sendQuery": true,
         "queryParameters": {
@@ -234,11 +177,60 @@
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.4,
       "position": [
-        2544,
-        496
+        2000,
+        992
       ],
-      "id": "3d7702d4-8ede-4bea-8629-2319dac0b128",
+      "id": "68fd085b-3830-411b-8f92-7187ae2971fe",
       "name": "buscar_categoria"
+    },
+    {
+      "parameters": {
+        "options": {
+          "batchSize": 512,
+          "stripNewLines": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        2208,
+        1200
+      ],
+      "id": "82eb82f0-9b78-4d7c-883c-216d2549d402",
+      "name": "Embeddings Mistral Cloud",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "xKrV6l6INLcWYpnQ",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Busca información en la base documental interna de TI de Nexora y recupera fragmentos relevantes de manuales, tickets resueltos, guías y documentación técnica. Úsala cuando el usuario describa un problema técnico, pida pasos de solución, o cuando necesites contexto antes de responder o escalar.",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "rag_repo",
+          "mode": "list",
+          "cachedResultName": "rag_repo"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        2128,
+        992
+      ],
+      "id": "8d45e4d8-7c6f-40a9-8ba3-51ae0322139f",
+      "name": "KB",
+      "credentials": {
+        "qdrantApi": {
+          "id": "amgwWYc7SWHHWb3h",
+          "name": "Qdrant account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -308,14 +300,39 @@
           }
         ]
       ]
+    },
+    "Embeddings Mistral Cloud": {
+      "ai_embedding": [
+        [
+          {
+            "node": "KB",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KB": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente ServiceDesk",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate"
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
   },
-  "versionId": "264b604b-2cb7-4085-b7aa-35e26860a0c6",
+  "versionId": "d65e2ccc-2228-49f6-86a6-bbe27272948e",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "b50312b720dbf6865de933d25e1e21474e0709a5e5dfd64185798427a56f6c9b"

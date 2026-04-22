@@ -1,117 +1,124 @@
-# Proyecto Automatizacion
+# Proyecto Automatizacion ServiceDesk + IA
 
-Solucion local para registrar tickets de ServiceDesk con:
+Sistema local para mesa de ayuda con chatbot, gestion de tickets, base de conocimiento, repositorio de archivos y flujos en n8n.
 
-- `web/`: chat web que conversa con n8n.
-- `servicedesk/`: portal de tickets para crear, listar y editar solicitudes.
-- `api/`: API FastAPI que guarda tickets en MongoDB.
-- `workflows/`: export del flujo de n8n.
-- `data/`: volumenes locales de ejecucion para MongoDB y n8n.
+## Componentes
 
-## Arquitectura
+- `web/`: chat web.
+- `servicedesk/`: portal de tickets, dashboard y soluciones.
+- `repository/`: interfaz para cargar/listar archivos del repositorio.
+- `api/`: backend FastAPI con MongoDB.
+- `workflows/`: flujos de n8n exportados.
+- `gateway/`: reverse proxy para exponer todo por una sola URL.
+- `data/`: volumenes persistentes de Docker (Mongo y n8n).
 
-- `web` envia mensajes al webhook de n8n.
-- `n8n` procesa el mensaje y puede invocar la API.
-- `api` genera el ticket y lo guarda en MongoDB.
-- `servicedesk` consume la API para administrar tickets.
-- `categorias.json` es la fuente original del catalogo usado en el formulario.
+## Arquitectura real
 
-## Estado del repo
+- `web` envia mensajes a n8n (webhook chatbot).
+- `n8n` ejecuta el agente IA y, cuando corresponde, crea ticket en API.
+- `servicedesk` consume API para tickets, metricas, soluciones y catalogo.
+- `repository` consume API para administrar archivos de `api/repository_storage`.
+- `api` persiste en MongoDB y expone endpoints para tickets, soluciones, repositorio, extraccion de texto y portfolio.
+- `qdrant` queda disponible para sincronizacion RAG.
 
-El repositorio ahora ignora archivos de ejecucion como `data/`, caches de Python y `.env`.
+## Puertos locales
 
-Si ya tienes esos archivos versionados, puedes sacarlos del indice sin borrarlos del disco con:
+- `web`: `http://localhost:8080`
+- `servicedesk`: `http://localhost:8081`
+- `repository`: `http://localhost:8082`
+- `api`: `http://localhost:8001`
+- `n8n`: `http://localhost:5678`
+- `qdrant`: `http://localhost:6333`
+- `gateway`: `http://localhost:8090`
 
-```powershell
-git rm -r --cached data api/__pycache__
-```
+## Endpoints API principales
 
-Eso limpia el repositorio sin tocar tu informacion local.
-
-## API
-
-### Tickets
+### Salud
 
 - `GET /health`
+
+### Catalogo
+
+- `GET /catalog/categories`
+- `GET /catalog/entries`
+- `GET /catalog/search?q=...&limit=...`
+
+### Repositorio y extraccion de texto
+
+- `GET /repository/files`
+- `POST /repository/files`
+- `DELETE /repository/files/{file_name}`
+- `POST /extract/text`
+- `POST /extract/text/by-name`
+
+### Soluciones
+
+- `GET /solutions`
+- `GET /solutions/{solution_id}`
+- `POST /solutions`
+- `PUT /solutions/{solution_id}`
+- `DELETE /solutions/{solution_id}`
+
+### Tickets y metrica tesis
+
 - `GET /tickets`
+- `GET /tickets/{id}`
 - `POST /tickets`
 - `PUT /tickets/{id}`
 - `DELETE /tickets/{id}`
+- `POST /tickets/{id}/comments`
+- `DELETE /tickets/{id}/comments/{comment_id}`
+- `GET /tickets/metrics`
+- `GET /tickets/export`
+- `GET /chat/interactions`
+- `POST /chat/interactions`
 
-### Catalogo de categorias
+### Portfolio
 
-Sin modificar `servicedesk/categorias.json`, la API expone el catalogo para otros consumidores:
+- `POST /portfolio/chat`
+- `POST /portfolio/formulario-web`
 
-- `GET /catalog/categories`: devuelve el arbol completo.
-- `GET /catalog/entries`: devuelve el catalogo plano.
-- `GET /catalog/search?q=mouse&limit=5`: devuelve coincidencias rankeadas.
+## Metricas y trazabilidad implementadas
 
-Esto es util para n8n porque evita meter todo el JSON en el prompt del agente cada vez.
+En tickets se soportan campos para medicion de tesis, incluyendo:
 
-## Recomendacion para n8n
+- `decision_chatbot`, `fue_escalado`, `fue_resuelto_en_chat`, `razon_decision`, `nivel_escalamiento`
+- `resuelto_por`, `fcr`, `fase_experimento`
+- `categoria_sugerida_ia`, `categoria_final`, `prioridad_sugerida_ia`, `prioridad_final`
+- `tiempo_inicio_atencion`, `tiempo_respuesta_chatbot`, `tiempo_creacion_ticket`, `tiempo_resolucion_total`
+- `usa_contexto_rag`, `fuente_respuesta`
 
-La mejor opcion para que el chatbot coloque bien categoria, subcategoria y articulo es esta:
+## Arranque rapido
 
-1. El agente resume el problema del usuario en una frase corta.
-2. Llama a un `HTTP Request Tool` contra `GET http://fastapi:8000/catalog/search?q=...`.
-3. Usa la mejor coincidencia devuelta para poblar `categoria`, `subcategoria` y `articulo`.
-4. Si las coincidencias son ambiguas o el score es bajo, hace una sola pregunta de aclaracion.
-5. Luego llama a `crear_ticket`.
-
-### Por que recomiendo eso
-
-- Mantienes `categorias.json` como fuente original.
-- Evitas prompts enormes e inestables.
-- El catalogo queda reusable para el portal, la API y n8n.
-- Si el catalogo cambia, n8n consume la version actual sin editar el workflow entero.
-
-### Flujo sugerido en n8n
-
-- `Webhook`
-- `AI Agent`
-- `HTTP Request Tool` para buscar categoria
-- `HTTP Request Tool` para crear ticket
-- `Respond to Webhook`
-
-### Prompt sugerido para el agente
-
-```text
-Antes de crear el ticket, busca la mejor categoria usando la herramienta de catalogo.
-Debes devolver y usar exactamente los valores categoria, subcategoria y articulo entregados por el catalogo.
-Si no encuentras una coincidencia clara, haz una unica pregunta corta de aclaracion.
-No inventes categorias.
+```powershell
+docker compose up -d
 ```
 
-## Funciones nuevas
+Accesos:
 
-- Validaciones fuertes para campos criticos del ticket y combinacion valida de categoria/subcategoria/articulo.
-- Adjuntos reales persistidos por ticket en `api/uploads/`.
-- Historial y comentarios por ticket.
-- Dashboard con metricas reales desde la API.
-- Resolucion con editor enriquecido, igual que la descripcion.
+- `http://localhost:8001/docs`
+- `http://localhost:8080`
+- `http://localhost:8081`
+- `http://localhost:8082`
 
-## Bugs corregidos
+## Script de demo
 
-- La API ahora responde `503` si Mongo no esta disponible, en vez de fallar con variables no definidas.
-- `DELETE /tickets/{id}` ahora devuelve `404` si el ticket no existe.
-- El frontend ya no reemplaza la prioridad por `Cerrado` al guardar una resolucion.
-- El portal centraliza la URL base de la API en una sola constante.
-- Se corrigio la generacion del gradiente de las graficas.
+Para arranque completo con ngrok:
 
-## Tests
+```powershell
+.\start-demo.ps1
+```
 
-Se agregaron tests basicos para la API y el catalogo.
-
-Ejecucion sugerida:
+## Testing
 
 ```powershell
 cd api
 python -m unittest discover -s tests -v
 ```
 
-## Notas
+## Referencias internas
 
-- No se modifico la codificacion fuente de `servicedesk/categorias.json`.
-- Las credenciales actuales se dejaron tal como pediste.
-- Las rutas `localhost` siguen bien para terminar localmente; mas adelante se pueden parametrizar para un entorno real.
+- Guia de reinicio demo: [GUIA_REINICIO_DEMO.md](./GUIA_REINICIO_DEMO.md)
+- Notas RAG: [NOTAS_RAG.md](./NOTAS_RAG.md)
+- Resultado de validacion tecnica: [VALIDACION_TOTAL.md](./VALIDACION_TOTAL.md)
 

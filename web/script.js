@@ -1,7 +1,9 @@
 const chatBox = document.getElementById("chat-box");
 const input = document.getElementById("input");
 const sendBtn = document.getElementById("sendBtn");
+const expandBtn = document.getElementById("expandBtn");
 const statusEl = document.getElementById("status");
+const phoneFrame = document.querySelector(".phone-frame");
 const phoneNotch = document.querySelector(".phone-notch");
 const PUBLIC_BASE_URL = "https://caritive-corrosively-natalia.ngrok-free.dev";
 const API_BASE_URL = `${PUBLIC_BASE_URL}/api`;
@@ -15,6 +17,7 @@ if (!sessionId) {
 let interactionCount = Number(localStorage.getItem("chat_interaction_count") || "0");
 let secretTapCount = 0;
 let secretTapTimer = null;
+let isExpanded = localStorage.getItem("chat_expanded") === "true";
 
 function setStatus(text) {
   if (statusEl) statusEl.textContent = text;
@@ -23,6 +26,37 @@ function setStatus(text) {
 function autoResizeInput() {
   input.style.height = "auto";
   input.style.height = `${Math.min(input.scrollHeight, 140)}px`;
+}
+
+function syncExpandButton() {
+  if (!expandBtn) return;
+  expandBtn.textContent = isExpanded ? "⤡" : "⤢";
+  expandBtn.title = isExpanded ? "Reducir chat" : "Agrandar chat";
+  expandBtn.setAttribute("aria-label", isExpanded ? "Reducir chat" : "Agrandar chat");
+}
+
+function applyExpandedState(animate = false) {
+  if (!phoneFrame) return;
+  if (!animate) {
+    phoneFrame.style.transition = "none";
+  }
+  phoneFrame.classList.toggle("expanded", isExpanded);
+  syncExpandButton();
+  if (!animate) {
+    window.setTimeout(() => {
+      phoneFrame.style.transition = "";
+    }, 20);
+  }
+}
+
+function toggleExpandedState() {
+  isExpanded = !isExpanded;
+  localStorage.setItem("chat_expanded", String(isExpanded));
+  applyExpandedState(true);
+  window.setTimeout(() => {
+    scrollToBottom();
+    input.focus();
+  }, 360);
 }
 
 function escapeHtml(value) {
@@ -371,7 +405,9 @@ input.addEventListener("keydown", (event) => {
 input.addEventListener("input", autoResizeInput);
 
 sendBtn.addEventListener("click", sendMessage);
+expandBtn?.addEventListener("click", toggleExpandedState);
 phoneNotch?.addEventListener("click", registerSecretTap);
 
+applyExpandedState(false);
 input.focus();
 autoResizeInput();

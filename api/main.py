@@ -689,6 +689,26 @@ def build_repository_file_url(stored_name: str) -> str:
     return f"/repository-files/{stored_name}"
 
 
+def resolve_repository_file_path(file_name: str) -> Path:
+    """
+    Resuelve un archivo del repositorio con estrategia en dos pasos:
+    1) Coincidencia exacta usando el nombre real solicitado (sin normalizar).
+    2) Fallback a nombre normalizado para compatibilidad.
+    """
+    exact_name = Path(file_name or "").name.strip()
+    if exact_name:
+        exact_target = REPOSITORY_DIR / exact_name
+        if exact_target.exists() and exact_target.is_file():
+            return exact_target
+
+    normalized_name = sanitize_repository_filename(file_name)
+    normalized_target = REPOSITORY_DIR / normalized_name
+    if normalized_target.exists() and normalized_target.is_file():
+        return normalized_target
+
+    raise HTTPException(status_code=404, detail="No se encontró el archivo solicitado.")
+
+
 def serialize_repository_file(path: Path) -> dict[str, Any]:
     stat = path.stat()
     modified_at = datetime.fromtimestamp(stat.st_mtime, timezone.utc)
@@ -1609,11 +1629,7 @@ async def extraer_texto_plano(request: Request):
 
 @app.post("/extract/text/by-name")
 async def extraer_texto_plano_por_nombre(payload: RepositoryExtractionRequest):
-    safe_name = sanitize_repository_filename(payload.file_name)
-    target = REPOSITORY_DIR / safe_name
-    if not target.exists() or not target.is_file():
-        raise HTTPException(status_code=404, detail="No se encontró el archivo solicitado.")
-
+    target = resolve_repository_file_path(payload.file_name)
     content = target.read_bytes()
     extracted_text, source_type = extract_plain_text(target.name, content)
     result = serialize_extracted_text(target.name, extracted_text, source_type)

@@ -1,82 +1,70 @@
-# Notas RAG
+# Notas RAG (estado actual)
 
 ## Objetivo
-Construir el flujo de RAG del proyecto por etapas, sin mezclar todavía la parte de evaluación con el chatbot principal.
 
-## Paso A Paso Recomendado
+Sincronizar conocimiento de 3 fuentes hacia Qdrant en una coleccion unica para consulta RAG:
 
-### 1. Sincronización de archivos
-- Usar el workflow [Sincronización.json](/G:/OneDrive/OneDrive%20-%20Crosland/perfil%20de%20windows/Documents/mi-proyecto/workflows/Sincronización.json) como base.
-- Listar archivos desde `http://fastapi:8000/repository/files`.
-- Filtrar extensiones compatibles.
-- Descargar archivos.
-- Convertirlos a texto.
-- Dividirlos en chunks.
+- archivos del repositorio
+- soluciones del equipo
+- tickets de soporte
 
-### 2. Embeddings
-- Elegir el proveedor de embeddings.
-- Generar un embedding por cada chunk.
-- Mantener metadatos por chunk:
-  - `source_id`
-  - `file_name`
-  - `original_name`
-  - `extension`
-  - `modified_at`
-  - `chunk_index`
-  - `chunk_total`
-  - `download_url`
+## Fuentes API recomendadas
 
-### 3. Base vectorial
-- Guardar los embeddings en Qdrant.
-- Usar un `id` estable por chunk para poder reindexar sin duplicar.
-- Recomendación:
-  - `id = source_id + chunk_index + modified_at`
+- Archivos: `GET /repository/files`
+- Soluciones: `GET /solutions`
+- Tickets: `GET /tickets`
+- Extraccion de texto por archivo: `POST /extract/text/by-name`
 
-### 4. Flujo de consulta RAG
-- Recibir la pregunta del usuario.
-- Generar embedding de la pregunta.
-- Buscar en Qdrant los chunks más relevantes.
-- Pasar ese contexto al LLM.
-- Responder usando solo el contexto recuperado cuando aplique.
+## Identidad y versionado sugerido
 
-### 5. Integración con el chatbot
-- Hacer esto en otro momento, no en el workflow de sincronización.
-- El chatbot debe:
-  - recuperar contexto del RAG
-  - responder si puede
-  - escalar a ticket si no puede resolver con seguridad
+- `entity_type`: `repo_file | solution | ticket`
+- `entity_id`:
+  - archivo: `repo:<url>` (o id persistente cuando se exponga)
+  - solucion: `sol:<_id>`
+  - ticket: `ticket:<_id>`
+- `source_id`: igual a `entity_id`
+- `version_key`: `updated_at`/`fecha_actualizacion` + hash de contenido normalizado si aplica
 
-### 6. Evaluación tipo RAGAS
-- Hacerlo en un workflow aparte.
-- Crear dataset con:
-  - pregunta
-  - respuesta esperada o ground truth
-  - respuesta real del sistema
-  - contexto recuperado
-- Métricas recomendadas:
-  - `answer_correctness`
-  - `faithfulness`
-  - `answer_relevance`
-  - `context_precision` o `context_recall`
+## Estrategia de sincronizacion
 
-### 7. Métricas propias del proyecto
-- Además de RAGAS clásico, evaluar:
-  - si eligió bien `categoria / subcategoria / articulo`
-  - si resolvió correctamente en chat
-  - si escaló correctamente a ticket
+1. Leer fuente completa.
+2. Comparar contra `sync_snapshot` en Mongo.
+3. Detectar `new`, `updated`, `deleted`.
+4. Para `new/updated`:
+   - limpiar contenido
+   - chunking
+   - embedding
+   - borrar chunks previos por `source_id`
+   - upsert de nuevos chunks en `rag_repo`
+5. Para `deleted`:
+   - borrar en Qdrant por `source_id`
+6. Actualizar snapshot.
 
-## Orden Recomendado De Trabajo
-1. Terminar sincronización.
-2. Añadir embeddings.
-3. Hacer upsert en Qdrant.
-4. Construir flujo de consulta RAG.
-5. Probar preguntas reales.
-6. Crear workflow de evaluación.
-7. Integrarlo al chatbot.
+## Metadatos minimos por chunk
 
-## Nota Importante
-- No usar `http://localhost:8082/` como fuente principal de indexación si se puede evitar.
-- Es mejor usar:
-  - `GET http://fastapi:8000/repository/files`
-  - y luego descargar cada archivo desde la URL real que devuelve la API.
-- La web en `8082` sirve bien como interfaz humana, pero para automatización y RAG conviene más la API.
+- `source_id`
+- `entity_type`
+- `title`
+- `updated_at`
+- `version_key`
+- `document_origin`
+- `status` (solo tickets)
+- `chunk_index`
+- `chunk_total`
+
+## Decisiones operativas
+
+- Mantener una sola coleccion: `rag_repo`.
+- Borrar y reindexar por `source_id` para evitar duplicados.
+- Tickets cerrados pueden seguir indexados con `status=Cerrado` para historial, salvo regla de negocio contraria.
+- Si una entidad desaparece de la fuente, se elimina del indice.
+
+## Nota sobre workflow base
+
+`workflows/Sincronizacion.json` sirve como referencia de patron, pero no debe asumirse como flujo final vigente en produccion sin revision.
+
+## Pendientes recomendados
+
+- Exponer `file_id` persistente en `/repository/files` para renames limpios.
+- Definir hash de contenido en backend para detectar cambios reales.
+- Implementar monitoreo de drift entre snapshot y Qdrant.

@@ -15,12 +15,11 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.3,
       "position": [
-        -2048,
-        144
+        -864,
+        -176
       ],
       "id": "3c7aeec0-f478-4c6f-ab37-2497599c46d3",
-      "name": "Schedule Trigger",
-      "disabled": true
+      "name": "Schedule Trigger"
     },
     {
       "parameters": {
@@ -29,8 +28,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1424,
-        96
+        -192,
+        -176
       ],
       "id": "ebdaa4ad-2bbd-43e6-8cf9-40afa837c100",
       "name": "Detectar cambios"
@@ -43,8 +42,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1872,
-        96
+        -640,
+        -176
       ],
       "id": "6e455f7f-1cc7-42ee-b3ed-e43bcd3a0d75",
       "name": "Leer Repo"
@@ -57,8 +56,8 @@
       "type": "n8n-nodes-base.mongoDb",
       "typeVersion": 1.2,
       "position": [
-        -1648,
-        96
+        -416,
+        -176
       ],
       "id": "8581bb99-620a-4828-afbb-e43f00cc986b",
       "name": "Leer Mongo",
@@ -82,8 +81,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -976,
-        -48
+        304,
+        -192
       ],
       "id": "2ada7e45-70bb-4158-bbc2-5d88d8ec11fb",
       "name": "Qdrant Borrar"
@@ -100,8 +99,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -528,
-        192
+        -672,
+        416
       ],
       "id": "6968f286-0ee8-40b6-bc56-85d6d83989dc",
       "name": "Extraer Texto"
@@ -113,8 +112,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -304,
-        192
+        -528,
+        416
       ],
       "id": "6121504d-b322-463d-820e-e51f480213b9",
       "name": "Procesar Texto"
@@ -126,8 +125,8 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        144,
-        192
+        -80,
+        144
       ],
       "id": "478ecc59-b6f5-4bdb-b55b-59246aee36fd",
       "name": "Loop Chunks"
@@ -140,8 +139,8 @@
       "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
       "typeVersion": 1,
       "position": [
-        576,
-        624
+        128,
+        512
       ],
       "id": "1f89cb82-1eee-4214-930c-e61ba7f35fde",
       "name": "Dividir Texto"
@@ -197,8 +196,8 @@
       "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
       "typeVersion": 1.1,
       "position": [
-        496,
-        416
+        128,
+        352
       ],
       "id": "a0a2f8bb-1e4a-4305-89e9-06133571498d",
       "name": "Preparar Docs"
@@ -215,8 +214,8 @@
       "type": "n8n-nodes-base.mongoDb",
       "typeVersion": 1.2,
       "position": [
-        1088,
-        192
+        528,
+        320
       ],
       "id": "45886227-2250-4b61-939f-1f9d91fbe65c",
       "name": "Mongo Upsert",
@@ -236,8 +235,8 @@
       "type": "n8n-nodes-base.mongoDb",
       "typeVersion": 1.2,
       "position": [
-        -752,
-        -48
+        528,
+        -192
       ],
       "id": "2b323007-9756-4e49-b786-155245bf6f32",
       "name": "🔴 Qdrant Borrar",
@@ -261,8 +260,8 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
       "typeVersion": 1.3,
       "position": [
-        400,
-        192
+        144,
+        128
       ],
       "id": "799cf850-931f-4ec8-81d1-a2c8653efe16",
       "name": "🟢 Qdrant Insertar",
@@ -280,8 +279,8 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsMistralCloud",
       "typeVersion": 1,
       "position": [
-        368,
-        416
+        -64,
+        368
       ],
       "id": "5670ae53-d652-43a4-9c60-3a726c18f5d8",
       "name": "🧠 Embeddings",
@@ -357,8 +356,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        864,
-        192
+        528,
+        128
       ],
       "id": "23bca5e9-5203-4eeb-a601-dec549275fe7",
       "name": "📦 Preparar Mongo"
@@ -375,8 +374,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -752,
-        272
+        -720,
+        112
       ],
       "id": "dc5c1ca8-2b73-45d3-a628-732542dd704f",
       "name": "Qdrant Borrar Mod"
@@ -408,8 +407,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -976,
-        192
+        -896,
+        400
       ],
       "id": "5aa49485-4070-44bf-8dae-f8cc97e4f6de",
       "name": "¿Modificado?"
@@ -441,8 +440,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -80,
-        192
+        -384,
+        416
       ],
       "id": "7802a8b7-acbb-47c2-bc44-57e7d118d4e7",
       "name": "¿Indexar?"
@@ -507,11 +506,74 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        -1200,
-        96
+        0,
+        -176
       ],
       "id": "c5ecac8c-dffb-4cc8-b171-a129843ba1e9",
       "name": "Ruta Sync"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 240,
+        "width": 496,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        208,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "255d6a55-32cd-4b99-aa86-2bf31fc196bd",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 624,
+        "width": 1696,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -976,
+        48
+      ],
+      "typeVersion": 1,
+      "id": "3085d105-eb93-4d2d-9b01-37e40f6eae63",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 208,
+        "width": 256
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        64
+      ],
+      "id": "b8453b9e-15ec-4098-ae63-1b4e0384b499",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 544,
+        "width": 640,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -176,
+        80
+      ],
+      "id": "53243071-902a-4d9f-8a72-b2b286a99557",
+      "name": "Sticky Note3"
     }
   ],
   "pinData": {},
@@ -724,12 +786,16 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate"
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "America/Lima",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
   },
-  "versionId": "514e25cc-34a1-414f-b7d6-702e32d432c4",
+  "versionId": "9320d81f-4157-4f4e-b8a9-e103e072f56a",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "b50312b720dbf6865de933d25e1e21474e0709a5e5dfd64185798427a56f6c9b"

@@ -24,6 +24,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 24px;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgba(79, 70, 229, 0.24), transparent 35%),
     radial-gradient(circle at bottom right, rgba(255, 109, 90, 0.18), transparent 30%),
@@ -40,6 +41,21 @@ body {
   background: linear-gradient(180deg, #020617, #000);
   box-shadow: var(--shadow), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   position: relative;
+  transition:
+    width 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.phone-frame.expanded {
+  width: min(96vw, 1160px);
+  height: min(94vh, 920px);
+  padding: 10px;
+  border-radius: 24px;
+  box-shadow: 0 26px 72px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 .phone-notch {
@@ -52,6 +68,13 @@ body {
   border-radius: 999px;
   background: #020617;
   z-index: 2;
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+
+.phone-frame.expanded .phone-notch {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-8px);
+  pointer-events: none;
 }
 
 .phone-notch.secret-active {
@@ -66,12 +89,18 @@ body {
   height: 100%;
   border-radius: 30px;
   overflow: hidden;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   background:
     radial-gradient(circle at top, rgba(79, 70, 229, 0.16), transparent 32%),
     linear-gradient(180deg, #0f172a 0%, #0a1322 100%);
   border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: border-radius 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.phone-frame.expanded .chat-container {
+  border-radius: 18px;
 }
 
 .chat-header {
@@ -82,6 +111,36 @@ body {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(18px);
   border-bottom: 1px solid var(--glass-border);
+}
+
+.chat-header-actions {
+  margin-left: auto;
+}
+
+.expand-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: transform 0.24s ease, background 0.24s ease, border-color 0.24s ease;
+}
+
+.expand-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.24);
+  transform: translateY(-1px);
+}
+
+.phone-frame.expanded .expand-btn {
+  background: rgba(79, 70, 229, 0.24);
+  border-color: rgba(99, 102, 241, 0.45);
 }
 
 .avatar {
@@ -131,6 +190,7 @@ body {
 .chat-box {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -142,6 +202,7 @@ body {
 
 .message {
   max-width: 86%;
+  min-width: 0;
   border-radius: 22px;
   padding: 10px 12px;
   animation: messageIn 0.24s ease-out;
@@ -183,6 +244,7 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 8px;
+  min-width: 0;
 }
 
 .message-body {
@@ -190,6 +252,23 @@ body {
   line-height: 1.6;
   user-select: text;
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.message-body p,
+.message-body li,
+.message-body h3 {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.message-body pre,
+.message-body code {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
 .message-menu {
@@ -227,21 +306,35 @@ body {
   background: rgba(9, 15, 29, 0.98);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
-  display: none;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(6px) scale(0.97);
+  transform-origin: top right;
+  transition:
+    opacity 0.2s ease,
+    transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0.2s ease;
   z-index: 10;
 }
 
 .message.user .message-menu-panel {
   right: 0;
+  transform-origin: top right;
 }
 
 .message.bot .message-menu-panel {
   left: 0;
+  transform-origin: top left;
 }
 
 .message-menu.open .message-menu-panel {
   display: grid;
   gap: 4px;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
 }
 
 .message-menu-item {
@@ -387,6 +480,13 @@ body {
     height: 100vh;
     border-radius: 22px;
     padding: 8px;
+  }
+
+  .phone-frame.expanded {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 16px;
+    padding: 6px;
   }
 }
 
