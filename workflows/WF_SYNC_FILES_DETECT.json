@@ -1,0 +1,868 @@
+{
+  "name": "WF_SYNC_FILES_DETECT",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "http://fastapi:8000/repository/files",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -160,
+        -752
+      ],
+      "id": "22dbeaa9-b8ad-4d4d-af2f-89c7fea273f8",
+      "name": "HTTP Request - Get Files"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.all();\n\nlet files = [];\nfor (const item of input) {\n  const data = item.json;\n\n  if (Array.isArray(data)) {\n    files.push(...data);\n  } else if (Array.isArray(data.files)) {\n    files.push(...data.files);\n  } else if (Array.isArray(data.data)) {\n    files.push(...data.data);\n  } else if (data && data.name && data.url) {\n    files.push(data);\n  }\n}\n\nconst now = new Date().toISOString();\n\nreturn files.map((file) => {\n  const entityId = String(file.url || file.name);\n  const modifiedAt = file.modified_at || null;\n  const size = Number(file.size || 0);\n\n  return {\n    json: {\n      entity_type: 'file',\n      entity_id: entityId,\n      name: file.name || null,\n      original_name: file.original_name || null,\n      extension: file.extension || null,\n      source_url: file.url || null,\n      modified_at: modifiedAt,\n      size,\n      version_key: `${modifiedAt || ''}|${size}`,\n      snapshot_status: 'active',\n      last_seen_at: now,\n      raw: file\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        -752
+      ],
+      "id": "354dee70-0f6a-4efd-af79-2c71168fa615",
+      "name": "Code - Normalize Current Files"
+    },
+    {
+      "parameters": {
+        "jsCode": "const currentItems = $('Code - Normalize Current Files').all().map(i => i.json);\n\nconst previousItems = $('MongoDB - Load Previous File Snapshot')\n  .all()\n  .map(i => i.json)\n  .filter(i => i && i.entity_id);\n\nconst currentMap = new Map();\nconst previousMap = new Map();\n\nfor (const item of currentItems) {\n  currentMap.set(item.entity_id, item);\n}\n\nfor (const item of previousItems) {\n  previousMap.set(item.entity_id, item);\n}\n\nconst results = [];\n\nfor (const [entityId, current] of currentMap.entries()) {\n  const previous = previousMap.get(entityId);\n\n  if (!previous) {\n    results.push({\n      json: {\n        entity_type: 'file',\n        entity_id: entityId,\n        diff_type: 'created',\n        current,\n        previous: null\n      }\n    });\n    continue;\n  }\n\n  if (current.version_key !== previous.version_key) {\n    results.push({\n      json: {\n        entity_type: 'file',\n        entity_id: entityId,\n        diff_type: 'updated',\n        current,\n        previous\n      }\n    });\n  }\n}\n\nfor (const [entityId, previous] of previousMap.entries()) {\n  if (!currentMap.has(entityId)) {\n    results.push({\n      json: {\n        entity_type: 'file',\n        entity_id: entityId,\n        diff_type: 'deleted',\n        current: null,\n        previous\n      }\n    });\n  }\n}\n\nif (results.length === 0) {\n  return [\n    {\n      json: {\n        entity_type: 'file',\n        diff_type: 'no_changes'\n      }\n    }\n  ];\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        -752
+      ],
+      "id": "563bc1a2-9315-4936-9827-a03eb4e6bff8",
+      "name": "Code - Compare Current Vs Previous"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const row = $input.item.json;\n\nif (row.diff_type === 'no_changes') {\n  return {\n    json: {\n      entity_type: 'file',\n      event_type: 'no_changes'\n    }\n  };\n}\n\nlet eventType = null;\nlet eventTs = new Date().toISOString();\nlet versionKey = null;\nlet payload = null;\n\nif (row.diff_type === 'created') {\n  eventType = 'file_created';\n  eventTs = row.current?.modified_at || eventTs;\n  versionKey = row.current?.version_key || null;\n  payload = row.current;\n}\n\nif (row.diff_type === 'updated') {\n  eventType = 'file_updated';\n  eventTs = row.current?.modified_at || eventTs;\n  versionKey = row.current?.version_key || null;\n  payload = {\n    current: row.current,\n    previous: row.previous\n  };\n}\n\nif (row.diff_type === 'deleted') {\n  eventType = 'file_deleted';\n  versionKey = row.previous?.version_key || null;\n  payload = row.previous;\n}\n\nreturn {\n  json: {\n    entity_type: 'file',\n    entity_id: row.entity_id,\n    event_type: eventType,\n    event_ts: eventTs,\n    version_key: versionKey,\n    correlation_key: `file|${row.entity_id}|${eventType}|${eventTs}`,\n    payload\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        -752
+      ],
+      "id": "e26b2874-56f5-4614-ae37-2e1b1a70ca28",
+      "name": "Code - Build File Events"
+    },
+    {
+      "parameters": {
+        "collection": "sync_snapshot",
+        "options": {},
+        "query": "{\n  \"entity_type\": \"file\"\n}"
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        288,
+        -752
+      ],
+      "id": "ed1fe049-f808-432d-8c14-97530bb71b2e",
+      "name": "MongoDB - Load Previous File Snapshot",
+      "alwaysOutputData": true,
+      "credentials": {
+        "mongoDb": {
+          "id": "OVY43bDYYcqEdR6l",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        -656
+      ],
+      "id": "fc2a1046-df83-450c-af6a-b26112eef861",
+      "name": "Manual Trigger"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ev = $input.item.json;\n\nif (ev.event_type === 'file_created') {\n  const data = ev.payload;\n\n  return {\n    json: {\n      op: 'upsert',\n      entity_type: 'file',\n      entity_id: ev.entity_id,\n      version_key: ev.version_key,\n      status: 'active',\n      name: data.name,\n      original_name: data.original_name,\n      extension: data.extension,\n      source_url: data.source_url,\n      modified_at: data.modified_at,\n      size: data.size,\n      last_seen_at: new Date().toISOString(),\n      raw: data.raw\n    }\n  };\n}\n\nif (ev.event_type === 'file_updated') {\n  const data = ev.payload.current;\n\n  return {\n    json: {\n      op: 'upsert',\n      entity_type: 'file',\n      entity_id: ev.entity_id,\n      version_key: ev.version_key,\n      status: 'active',\n      name: data.name,\n      original_name: data.original_name,\n      extension: data.extension,\n      source_url: data.source_url,\n      modified_at: data.modified_at,\n      size: data.size,\n      last_seen_at: new Date().toISOString(),\n      raw: data.raw\n    }\n  };\n}\n\nif (ev.event_type === 'file_deleted') {\n  return {\n    json: {\n      op: 'delete',\n      entity_type: 'file',\n      entity_id: ev.entity_id\n    }\n  };\n}\n\nreturn {\n  json: {\n    op: 'ignore'\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        -560
+      ],
+      "id": "37b51cbd-c1b3-415a-9452-cb40c4ed8b87",
+      "name": "Code - Prepare Snapshot Ops"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0def40ca-38f4-4c8b-acd4-7ca7ca8f2c1a",
+              "leftValue": "={{ $json.op }}",
+              "rightValue": "upsert",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1184,
+        -560
+      ],
+      "id": "7b7c0d37-3387-4636-a413-1c740d0626cb",
+      "name": "IF - Is Upsert"
+    },
+    {
+      "parameters": {
+        "operation": "findOneAndUpdate",
+        "collection": "sync_snapshot",
+        "updateKey": "entity_id",
+        "fields": "=entity_type,entity_id,version_key,status,name,original_name,extension,source_url,modified_at,size,last_seen_at,raw",
+        "upsert": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        1408,
+        -656
+      ],
+      "id": "8d63d230-4fb9-4e6f-9df9-41c19a1636d2",
+      "name": "MongoDB - Upsert File Snapshot",
+      "credentials": {
+        "mongoDb": {
+          "id": "OVY43bDYYcqEdR6l",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "aec87084-a439-4906-b21b-aed980ac5816",
+              "leftValue": "={{ $json.op }}",
+              "rightValue": "delete",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1408,
+        -464
+      ],
+      "id": "f11510c1-d014-41b0-bba7-87114d9dde72",
+      "name": "IF - Is Delete"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "collection": "sync_snapshot",
+        "query": "={\n  \"entity_type\": \"file\",\n  \"entity_id\": \"{{ $json.entity_id }}\"\n}"
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        1632,
+        -464
+      ],
+      "id": "24724b80-2155-4732-b6a6-70a18c598f25",
+      "name": "MongoDB - Delete File Snapshot",
+      "credentials": {
+        "mongoDb": {
+          "id": "OVY43bDYYcqEdR6l",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "rag_repo",
+          "mode": "list",
+          "cachedResultName": "rag_repo"
+        },
+        "options": {
+          "collectionConfig": "",
+          "contentPayloadKey": "content",
+          "metadataPayloadKey": "metadata"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        1888,
+        -1040
+      ],
+      "id": "4eebec00-94d1-4c92-bb66-7586c6ba24f6",
+      "name": "Qdrant Vector Store",
+      "credentials": {
+        "qdrantApi": {
+          "id": "amgwWYc7SWHHWb3h",
+          "name": "Qdrant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.event_type }}",
+                    "rightValue": "file_created",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "882b1f65-eb29-4a4c-833d-0f4e685a76cd"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "file_created"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "fefe47bc-2516-40b2-8713-594a35fd94e1",
+                    "leftValue": "={{ $json.event_type }}",
+                    "rightValue": "file_updated",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "file_updated"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "dcf29aa4-fec0-4a0b-b4db-fe1371defee0",
+                    "leftValue": "={{ $json.event_type }}",
+                    "rightValue": "file_deleted",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "file_deleted"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        960,
+        -1056
+      ],
+      "id": "e069e61d-160b-461d-a790-5a383bfcac34",
+      "name": "Switch - Evento Archivo"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ev = $input.item.json;\n\nlet data = null;\n\nif (ev.event_type === 'file_created') {\n  data = ev.payload;\n}\n\nif (ev.event_type === 'file_updated') {\n  data = ev.payload.current;\n}\n\nreturn {\n  json: {\n    event_type: ev.event_type,\n    entity_type: 'file',\n    entity_id: ev.entity_id,\n    source_id: `repo:${data.name}`,\n    file_name: data.name,\n    original_name: data.original_name || null,\n    source_url: data.source_url || null,\n    modified_at: data.modified_at || null,\n    version_key: `${data.modified_at || ''}:${data.size || 0}`\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        -1232
+      ],
+      "id": "ba69e84d-af9e-4fe8-8f16-7317615e9827",
+      "name": "Code - Preparar Contexto Archivo"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ev = $input.item.json;\n\nlet data = null;\n\nif (ev.event_type === 'file_updated') {\n  data = ev.payload.current;\n}\n\nif (ev.event_type === 'file_deleted') {\n  data = ev.payload;\n}\n\nreturn {\n  json: {\n    event_type: ev.event_type,\n    entity_type: 'file',\n    entity_id: ev.entity_id,\n    source_id: `repo:${data.name}`,\n    file_name: data.name || null\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        -1040
+      ],
+      "id": "f9d10336-eba3-482a-b26a-cc82c2196ef0",
+      "name": "Code - Preparar Delete Archivo"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://fastapi:8000/extract/text/by-name",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"file_name\": $json.file_name\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1408,
+        -1232
+      ],
+      "id": "8b0338aa-c1b1-4612-81de-37c818dc64b9",
+      "name": "HTTP Request - Extraer Texto Archivo"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ctx = $('Code - Preparar Contexto Archivo').item.json;\nconst data = $input.item.json;\n\nconst content =\n  data?.files?.[0]?.text ||\n  data.text ||\n  data.content ||\n  data.extracted_text ||\n  data.extracted_content ||\n  '';\n\nreturn {\n  json: {\n    content,\n    metadata: {\n      source_id: ctx.source_id,\n      entity_type: 'file',\n      title: ctx.file_name,\n      file_name: ctx.file_name,\n      version_key: ctx.version_key,\n      document_origin: 'repository_storage',\n      updated_at: ctx.modified_at,\n      status: null\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        -1232
+      ],
+      "id": "d780a412-c68d-4654-9ffb-273023360965",
+      "name": "Code - Preparar Documento Archivo"
+    },
+    {
+      "parameters": {
+        "chunkSize": 1200,
+        "chunkOverlap": 200,
+        "options": {
+          "splitCode": "markdown"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        2064,
+        -608
+      ],
+      "id": "3a2afea0-cd77-48ee-886a-cb97b6fd3c43",
+      "name": "Recursive Character Text Splitter - Archivo"
+    },
+    {
+      "parameters": {
+        "options": {
+          "batchSize": 512,
+          "stripNewLines": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        1856,
+        -816
+      ],
+      "id": "f67921f3-efa1-4ef8-b4fe-0500ac6af81e",
+      "name": "Embeddings Mistral Cloud - Archivo",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "xKrV6l6INLcWYpnQ",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.content }}",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "source_id",
+                "value": "={{ $json.metadata.source_id }}"
+              },
+              {
+                "name": "entity_type",
+                "value": "={{ $json.metadata.entity_type }}"
+              },
+              {
+                "name": "title",
+                "value": "={{ $json.metadata.title }}"
+              },
+              {
+                "name": "file_name",
+                "value": "={{ $json.metadata.file_name }}"
+              },
+              {
+                "name": "version_key",
+                "value": "={{ $json.metadata.version_key }}"
+              },
+              {
+                "name": "document_origin",
+                "value": "={{ $json.metadata.document_origin }}"
+              },
+              {
+                "name": "updated_at",
+                "value": "={{ $json.metadata.updated_at }}"
+              },
+              {
+                "name": "status",
+                "value": "={{ $json.metadata.status }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1984,
+        -816
+      ],
+      "id": "2a766ede-0b25-4bc0-9132-46876d077888",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ev = $input.item.json;\nconst data = ev.payload.current;\n\nreturn {\n  json: {\n    event_type: ev.event_type,\n    entity_type: 'file',\n    entity_id: ev.entity_id,\n    source_id: `repo:${data.name}`,\n    file_name: data.name,\n    original_name: data.original_name || null,\n    source_url: data.source_url || null,\n    modified_at: data.modified_at || null,\n    version_key: `${data.modified_at || ''}:${data.size || 0}`\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        -848
+      ],
+      "id": "e367614a-d753-4ea3-9ae4-0bf18b65e812",
+      "name": "Code - Preparar Contexto Archivo Updated"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://fastapi:8000/extract/text/by-name",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"file_name\": $json.file_name\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1408,
+        -848
+      ],
+      "id": "26bd442a-6bf3-45c7-944f-d2c12fa472d2",
+      "name": "HTTP Request - Extraer Texto Archivo Updated"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ctx = $('Code - Preparar Contexto Archivo Updated').item.json;\nconst data = $input.item.json;\n\nconst content =\n  data?.files?.[0]?.text ||\n  data.text ||\n  data.content ||\n  data.extracted_text ||\n  data.extracted_content ||\n  '';\n\nreturn {\n  json: {\n    content,\n    metadata: {\n      source_id: ctx.source_id,\n      entity_type: 'file',\n      title: ctx.file_name,\n      file_name: ctx.file_name,\n      version_key: ctx.version_key,\n      document_origin: 'repository_storage',\n      updated_at: ctx.modified_at,\n      status: null\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        -848
+      ],
+      "id": "e53e7d54-0951-4588-af2b-3cd588477313",
+      "name": "Code - Preparar Documento Archivo Updated"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://qdrant:6333/collections/rag_repo/points/delete",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"filter\": {\n    \"must\": [\n      {\n        \"key\": \"metadata.source_id\",\n        \"match\": {\n          \"value\": $json.source_id\n        }\n      }\n    ]\n  }\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1408,
+        -1040
+      ],
+      "id": "94bbe860-88c6-4213-adce-11bd6ae7d873",
+      "name": "HTTP Request - Qdrant Delete By Source Id"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "GO"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -384,
+        -848
+      ],
+      "id": "f8e2a35b-14a1-439e-9a24-9b2fd1032a9a",
+      "name": "Desde el General"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request - Get Files": {
+      "main": [
+        [
+          {
+            "node": "Code - Normalize Current Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Normalize Current Files": {
+      "main": [
+        [
+          {
+            "node": "MongoDB - Load Previous File Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Compare Current Vs Previous": {
+      "main": [
+        [
+          {
+            "node": "Code - Build File Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MongoDB - Load Previous File Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Code - Compare Current Vs Previous",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Get Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Build File Events": {
+      "main": [
+        [
+          {
+            "node": "Code - Prepare Snapshot Ops",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Switch - Evento Archivo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Prepare Snapshot Ops": {
+      "main": [
+        [
+          {
+            "node": "IF - Is Upsert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MongoDB - Upsert File Snapshot": {
+      "main": [
+        []
+      ]
+    },
+    "IF - Is Upsert": {
+      "main": [
+        [
+          {
+            "node": "MongoDB - Upsert File Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF - Is Delete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Is Delete": {
+      "main": [
+        [
+          {
+            "node": "MongoDB - Delete File Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Evento Archivo": {
+      "main": [
+        [
+          {
+            "node": "Code - Preparar Contexto Archivo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code - Preparar Delete Archivo",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code - Preparar Contexto Archivo Updated",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code - Preparar Delete Archivo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Preparar Delete Archivo": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Qdrant Delete By Source Id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Preparar Contexto Archivo": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Extraer Texto Archivo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Extraer Texto Archivo": {
+      "main": [
+        [
+          {
+            "node": "Code - Preparar Documento Archivo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Preparar Documento Archivo": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Mistral Cloud - Archivo": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter - Archivo": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Extraer Texto Archivo Updated": {
+      "main": [
+        [
+          {
+            "node": "Code - Preparar Documento Archivo Updated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Preparar Contexto Archivo Updated": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Extraer Texto Archivo Updated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Preparar Documento Archivo Updated": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Qdrant Delete By Source Id": {
+      "main": [
+        []
+      ]
+    },
+    "Desde el General": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Get Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d836d276-48df-4ff5-b5bf-efc42b4eb39e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b50312b720dbf6865de933d25e1e21474e0709a5e5dfd64185798427a56f6c9b"
+  },
+  "id": "OIUW8GZY4Rc5Q9S5",
+  "tags": []
+}

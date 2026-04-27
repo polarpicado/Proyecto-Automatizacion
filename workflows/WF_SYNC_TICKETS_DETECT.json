@@ -1,0 +1,873 @@
+{
+  "name": "WF_SYNC_TICKETS_DETECT",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        -656
+      ],
+      "id": "0c72e214-d29b-446b-bb26-6f28bdc5a955",
+      "name": "Manual Trigger"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "rag_repo",
+          "mode": "list",
+          "cachedResultName": "rag_repo"
+        },
+        "options": {
+          "collectionConfig": "",
+          "contentPayloadKey": "content",
+          "metadataPayloadKey": "metadata"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        1888,
+        -1040
+      ],
+      "id": "849654dc-00e0-4c70-acb6-5bfb3035076d",
+      "name": "Qdrant Vector Store",
+      "credentials": {
+        "qdrantApi": {
+          "id": "amgwWYc7SWHHWb3h",
+          "name": "Qdrant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.content }}",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "source_id",
+                "value": "={{ $json.metadata.source_id }}"
+              },
+              {
+                "name": "entity_type",
+                "value": "={{ $json.metadata.entity_type }}"
+              },
+              {
+                "name": "title",
+                "value": "={{ $json.metadata.title }}"
+              },
+              {
+                "name": "version_key",
+                "value": "={{ $json.metadata.version_key }}"
+              },
+              {
+                "name": "document_origin",
+                "value": "={{ $json.metadata.document_origin }}"
+              },
+              {
+                "name": "updated_at",
+                "value": "={{ $json.metadata.updated_at }}"
+              },
+              {
+                "name": "status",
+                "value": "={{ $json.metadata.status }}"
+              },
+              {
+                "name": "id_itil",
+                "value": "={{ $json.metadata.id_itil }}"
+              },
+              {
+                "name": "category",
+                "value": "={{ $json.metadata.category }}"
+              },
+              {
+                "name": "priority",
+                "value": "={{ $json.metadata.priority }}"
+              },
+              {
+                "name": "has_attachments",
+                "value": "={{ $json.metadata.has_attachments }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1984,
+        -816
+      ],
+      "id": "483e123b-4553-4399-b566-7358435eb956",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "url": "http://fastapi:8000/tickets",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -160,
+        -752
+      ],
+      "id": "3b10e3d4-f20f-4bae-b5a4-e490202baae5",
+      "name": "HTTP Request - Get Tickets"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.all();\n\nlet tickets = [];\nfor (const item of input) {\n  const data = item.json;\n\n  if (Array.isArray(data)) {\n    tickets.push(...data);\n  } else if (Array.isArray(data.items)) {\n    tickets.push(...data.items);\n  } else if (Array.isArray(data.tickets)) {\n    tickets.push(...data.tickets);\n  } else if (Array.isArray(data.data)) {\n    tickets.push(...data.data);\n  } else if (data && data._id) {\n    tickets.push(data);\n  }\n}\n\nconst now = new Date().toISOString();\n\nreturn tickets.map((t) => {\n  return {\n    json: {\n      entity_type: 'ticket',\n      entity_id: String(t._id),\n      source_id: `ticket:${String(t._id)}`,\n      id_itil: t['ID-ITIL'] || null,\n      title: t.asunto || null,\n      status: t.estado || null,\n      description_html: t.descripcion_html || '',\n      resolution_html: t.resolucion_html || '',\n      comments: Array.isArray(t.comentarios) ? t.comentarios : [],\n      history: Array.isArray(t.historial) ? t.historial : [],\n      attachments: Array.isArray(t.adjuntos) ? t.adjuntos : [],\n      category: t.categoria || null,\n      subcategory: t.subcategoria || null,\n      article: t.articulo || null,\n      priority: t.prioridad || null,\n      created_at: t.created_at || null,\n      updated_at: t.fecha_actualizacion || null,\n      version_key: String(t.fecha_actualizacion || ''),\n      snapshot_status: 'active',\n      last_seen_at: now,\n      raw: t\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        -752
+      ],
+      "id": "c1159fd9-04e4-4d79-bc6a-ba0b8083067a",
+      "name": "Code - Normalize Current Tickets"
+    },
+    {
+      "parameters": {
+        "collection": "sync_snapshot",
+        "options": {},
+        "query": "{\n  \"entity_type\": \"ticket\"\n}"
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        288,
+        -752
+      ],
+      "id": "851c2c72-4af5-47a5-9be0-27db50d8c2b2",
+      "name": "MongoDB - Load Previous Tickets Snapshot",
+      "alwaysOutputData": true,
+      "credentials": {
+        "mongoDb": {
+          "id": "OVY43bDYYcqEdR6l",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const currentItems = $('Code - Normalize Current Tickets').all().map(i => i.json);\n\nconst previousItems = $('MongoDB - Load Previous Tickets Snapshot')\n  .all()\n  .map(i => i.json)\n  .filter(i => i && i.entity_id);\n\nconst currentMap = new Map();\nconst previousMap = new Map();\n\nfor (const item of currentItems) {\n  currentMap.set(item.entity_id, item);\n}\n\nfor (const item of previousItems) {\n  previousMap.set(item.entity_id, item);\n}\n\nconst results = [];\n\nfor (const [entityId, current] of currentMap.entries()) {\n  const previous = previousMap.get(entityId);\n\n  if (!previous) {\n    results.push({\n      json: {\n        entity_type: 'ticket',\n        entity_id: entityId,\n        diff_type: 'created',\n        current,\n        previous: null\n      }\n    });\n    continue;\n  }\n\n  if (current.version_key !== previous.version_key) {\n    results.push({\n      json: {\n        entity_type: 'ticket',\n        entity_id: entityId,\n        diff_type: 'updated',\n        current,\n        previous\n      }\n    });\n  }\n}\n\nfor (const [entityId, previous] of previousMap.entries()) {\n  if (!currentMap.has(entityId)) {\n    results.push({\n      json: {\n        entity_type: 'ticket',\n        entity_id: entityId,\n        diff_type: 'deleted',\n        current: null,\n        previous\n      }\n    });\n  }\n}\n\n// 🔥 CLAVE: evitar flujo muerto\nif (results.length === 0) {\n  return [\n    {\n      json: {\n        entity_type: 'ticket',\n        diff_type: 'no_changes'\n      }\n    }\n  ];\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        -752
+      ],
+      "id": "a8ffaad1-259e-431b-a9fc-34e0ad910372",
+      "name": "Code - Compare Current Vs Previous Tickets"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const row = $input.item.json;\n\nlet eventType = null;\nlet eventTs = new Date().toISOString();\nlet versionKey = null;\nlet payload = null;\n\nif (row.diff_type === 'created') {\n  eventType = 'ticket_created';\n  eventTs = row.current?.updated_at || row.current?.created_at || eventTs;\n  versionKey = row.current?.version_key || null;\n  payload = row.current;\n}\n\nif (row.diff_type === 'updated') {\n  eventType = 'ticket_updated';\n  eventTs = row.current?.updated_at || eventTs;\n  versionKey = row.current?.version_key || null;\n  payload = {\n    current: row.current,\n    previous: row.previous\n  };\n}\n\nif (row.diff_type === 'deleted') {\n  eventType = 'ticket_deleted';\n  versionKey = row.previous?.version_key || null;\n  payload = row.previous;\n}\n\nreturn {\n  json: {\n    entity_type: 'ticket',\n    entity_id: row.entity_id,\n    event_type: eventType,\n    event_ts: eventTs,\n    version_key: versionKey,\n    correlation_key: `ticket|${row.entity_id}|${eventType}|${eventTs}`,\n    payload\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        -752
+      ],
+      "id": "ffa1422c-7226-424a-a85e-2a9911f3eddc",
+      "name": "Code - Build Ticket Events"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.event_type }}",
+                    "rightValue": "ticket_created",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "882b1f65-eb29-4a4c-833d-0f4e685a76cd"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ticket_created"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "fefe47bc-2516-40b2-8713-594a35fd94e1",
+                    "leftValue": "={{ $json.event_type }}",
+                    "rightValue": "ticket_updated",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ticket_updated"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "dcf29aa4-fec0-4a0b-b4db-fe1371defee0",
+                    "leftValue": "={{ $json.event_type }}",
+                    "rightValue": "ticket_deleted",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ticket_deleted"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        960,
+        -1056
+      ],
+      "id": "a0a3c6b3-613e-43e5-bd0b-65dac448b456",
+      "name": "Switch - Evento Ticket"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ev = $input.item.json;\n\nif (ev.event_type === 'ticket_created') {\n  const data = ev.payload;\n\n  return {\n    json: {\n      op: 'upsert',\n      entity_type: 'ticket',\n      entity_id: ev.entity_id,\n      source_id: data.source_id,\n      version_key: ev.version_key,\n      status: data.status || null,\n      title: data.title || null,\n      description_html: data.description_html || '',\n      created_at: data.created_at || null,\n      updated_at: data.updated_at || null,\n      last_seen_at: new Date().toISOString(),\n      id_itil: data.id_itil || null,\n      category: data.category || null,\n      priority: data.priority || null,\n      has_attachments: Array.isArray(data.attachments) ? data.attachments.length > 0 : false,\n      raw: data.raw\n    }\n  };\n}\n\nif (ev.event_type === 'ticket_updated') {\n  const data = ev.payload.current;\n\n  return {\n    json: {\n      op: 'upsert',\n      entity_type: 'ticket',\n      entity_id: ev.entity_id,\n      source_id: data.source_id,\n      version_key: ev.version_key,\n      status: data.status || null,\n      title: data.title || null,\n      description_html: data.description_html || '',\n      created_at: data.created_at || null,\n      updated_at: data.updated_at || null,\n      last_seen_at: new Date().toISOString(),\n      id_itil: data.id_itil || null,\n      category: data.category || null,\n      priority: data.priority || null,\n      has_attachments: Array.isArray(data.attachments) ? data.attachments.length > 0 : false,\n      raw: data.raw\n    }\n  };\n}\n\nif (ev.event_type === 'ticket_deleted') {\n  return {\n    json: {\n      op: 'delete',\n      entity_type: 'ticket',\n      entity_id: ev.entity_id,\n      source_id: `ticket:${ev.entity_id}`\n    }\n  };\n}\n\nreturn {\n  json: {\n    op: 'ignore'\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        -560
+      ],
+      "id": "f3f5e99b-5d56-442d-a4a4-21b6be75e332",
+      "name": "Code - Prepare Snapshot Ops Tickets"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ev = $input.item.json;\nconst data = ev.payload;\n\nreturn {\n  json: {\n    event_type: ev.event_type,\n    entity_type: 'ticket',\n    entity_id: ev.entity_id,\n    source_id: `ticket:${ev.entity_id}`,\n    ticket_id: ev.entity_id,\n    id_itil: data.id_itil || null,\n    title: data.title || null,\n    status: data.status || null,\n    updated_at: data.updated_at || null,\n    version_key: data.version_key || null\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        -1232
+      ],
+      "id": "b50ca90b-1f75-47cf-ac92-f4cbdc9a08ad",
+      "name": "Code - Preparar Contexto Ticket"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ev = $input.item.json;\n\nreturn {\n  json: {\n    event_type: ev.event_type,\n    entity_type: 'ticket',\n    entity_id: ev.entity_id,\n    source_id: `ticket:${ev.entity_id}`\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        -1040
+      ],
+      "id": "f2b19b3d-3b96-452a-8c2e-28c17091ec47",
+      "name": "Code - Preparar Delete Ticket"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ev = $input.item.json;\nconst data = ev.payload.current;\n\nreturn {\n  json: {\n    event_type: ev.event_type,\n    entity_type: 'ticket',\n    entity_id: ev.entity_id,\n    source_id: `ticket:${ev.entity_id}`,\n    ticket_id: ev.entity_id,\n    id_itil: data.id_itil || null,\n    title: data.title || null,\n    status: data.status || null,\n    updated_at: data.updated_at || null,\n    version_key: data.version_key || null\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        -848
+      ],
+      "id": "2275f387-a618-4c7f-a2e6-207b9fce8915",
+      "name": "Code - Preparar Contexto Ticket Updated"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0def40ca-38f4-4c8b-acd4-7ca7ca8f2c1a",
+              "leftValue": "={{ $json.op }}",
+              "rightValue": "upsert",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1184,
+        -560
+      ],
+      "id": "fc2a3fe9-02be-46ee-9050-730b44f8fd17",
+      "name": "IF - Is Upsert Ticket"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'http://fastapi:8000/tickets/' + $json.ticket_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1408,
+        -1232
+      ],
+      "id": "ea11463a-5fe3-44ec-9c04-474317553401",
+      "name": "HTTP Request - Get Ticket Detail"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://qdrant:6333/collections/rag_repo/points/delete",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"filter\": {\n    \"must\": [\n      {\n        \"key\": \"metadata.source_id\",\n        \"match\": {\n          \"value\": $json.source_id\n        }\n      }\n    ]\n  }\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1408,
+        -1040
+      ],
+      "id": "190a3053-c9a1-42f1-981b-b79c7fdaaa5c",
+      "name": "HTTP Request - Qdrant Delete Ticket By Source Id"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'http://fastapi:8000/tickets/' + $json.ticket_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1408,
+        -848
+      ],
+      "id": "d3221e15-a880-4968-a2ed-b86a3ef696ca",
+      "name": "HTTP Request - Get Ticket Detail Updated"
+    },
+    {
+      "parameters": {
+        "operation": "findOneAndUpdate",
+        "collection": "sync_snapshot",
+        "updateKey": "entity_id",
+        "fields": "=entity_type,entity_id,source_id,version_key,status,title,description_html,created_at,updated_at,last_seen_at,id_itil,category,priority,has_attachments,raw",
+        "upsert": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        1408,
+        -656
+      ],
+      "id": "af73fafc-9f25-4700-97c1-03057e0c165d",
+      "name": "MongoDB - Upsert Ticket Snapshot",
+      "credentials": {
+        "mongoDb": {
+          "id": "OVY43bDYYcqEdR6l",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "aec87084-a439-4906-b21b-aed980ac5816",
+              "leftValue": "={{ $json.op }}",
+              "rightValue": "delete",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1408,
+        -464
+      ],
+      "id": "8d89d759-3931-4c74-9d88-6acecec182c3",
+      "name": "IF - Is Delete Ticket"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ctx = $('Code - Preparar Contexto Ticket').first().json;\nconst data = $input.item.json;\n\nconst stripHtml = (html = '') => {\n  return String(html)\n    .replace(/<br\\s*\\/?>/gi, '\\n')\n    .replace(/<\\/p>/gi, '\\n\\n')\n    .replace(/<\\/h[1-6]>/gi, '\\n\\n')\n    .replace(/<li>/gi, '- ')\n    .replace(/<\\/li>/gi, '\\n')\n    .replace(/<[^>]+>/g, '')\n    .replace(/\\n\\s*\\n\\s*\\n+/g, '\\n\\n')\n    .trim();\n};\n\nconst redact = (text = '') => {\n  return String(text)\n    .replace(/\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b/gi, '[email]')\n    .replace(/\\b(?:\\+?\\d{1,3}[\\s-]?)?(?:\\d[\\s-]?){7,15}\\b/g, '[phone]');\n};\n\nconst idItil = data['ID-ITIL'] || ctx.id_itil || null;\nconst title = data.asunto || ctx.title || '';\nconst status = data.estado || ctx.status || null;\nconst priority = data.prioridad || null;\nconst category = data.categoria || null;\nconst subcategory = data.subcategoria || null;\nconst article = data.articulo || null;\n\nconst descriptionText = redact(stripHtml(data.descripcion_html || ''));\nconst resolutionText = redact(stripHtml(data.resolucion_html || ''));\n\nconst comments = Array.isArray(data.comentarios) ? data.comentarios : [];\nconst history = Array.isArray(data.historial) ? data.historial : [];\nconst attachments = Array.isArray(data.adjuntos) ? data.adjuntos : [];\n\nconst commentsText = comments\n  .map((c) => {\n    const date = c.created_at || c.fecha || '';\n    const author = c.autor || c.usuario || c.user_name || '';\n    const body = redact(stripHtml(c.comentario_html || c.comentario || ''));\n    return [date ? `[${date}]` : '', author ? `[${author}]` : '', body]\n      .filter(Boolean)\n      .join(' ');\n  })\n  .filter(Boolean);\n\nconst historyText = history\n  .map((h) => {\n    const date = h.created_at || h.fecha || '';\n    const type = h.event_type || '';\n    const message = redact(stripHtml(h.message || ''));\n    return ['-', date ? `[${date}]` : '', type ? `${type}:` : '', message]\n      .filter(Boolean)\n      .join(' ');\n  })\n  .filter(Boolean);\n\nconst content = [\n  idItil ? `[TICKET] ${idItil}` : '[TICKET]',\n  `ID interno: ${ctx.ticket_id}`,\n  status ? `Estado: ${status}` : '',\n  priority ? `Prioridad: ${priority}` : '',\n  category ? `Categoría: ${category}` : '',\n  subcategory ? `Subcategoría: ${subcategory}` : '',\n  article ? `Artículo: ${article}` : '',\n  title ? `Asunto: ${title}` : '',\n  descriptionText ? `Descripción:\\n${descriptionText}` : '',\n  resolutionText ? `Resolución:\\n${resolutionText}` : '',\n  commentsText.length ? `Comentarios:\\n${commentsText.map(x => `- ${x}`).join('\\n')}` : '',\n  historyText.length ? `Historial:\\n${historyText.join('\\n')}` : ''\n].filter(Boolean).join('\\n\\n');\n\nreturn {\n  json: {\n    content,\n    metadata: {\n      source_id: ctx.source_id,\n      entity_type: 'ticket',\n      title,\n      file_name: null,\n      version_key: ctx.version_key,\n      document_origin: 'tickets_api',\n      updated_at: ctx.updated_at,\n      status: status || 'active',\n      id_itil: idItil,\n      category,\n      priority,\n      has_attachments: attachments.length > 0\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        -1232
+      ],
+      "id": "cadf98bd-fce7-4272-a268-287027f97ece",
+      "name": "Code - Preparar Documento Ticket"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ctx = $('Code - Preparar Contexto Ticket Updated').first().json;\nconst data = $input.item.json;\n\nconst stripHtml = (html = '') => {\n  return String(html)\n    .replace(/<br\\s*\\/?>/gi, '\\n')\n    .replace(/<\\/p>/gi, '\\n\\n')\n    .replace(/<\\/h[1-6]>/gi, '\\n\\n')\n    .replace(/<li>/gi, '- ')\n    .replace(/<\\/li>/gi, '\\n')\n    .replace(/<[^>]+>/g, '')\n    .replace(/\\n\\s*\\n\\s*\\n+/g, '\\n\\n')\n    .trim();\n};\n\nconst redact = (text = '') => {\n  return String(text)\n    .replace(/\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b/gi, '[email]')\n    .replace(/\\b(?:\\+?\\d{1,3}[\\s-]?)?(?:\\d[\\s-]?){7,15}\\b/g, '[phone]');\n};\n\nconst idItil = data['ID-ITIL'] || ctx.id_itil || null;\nconst title = data.asunto || ctx.title || '';\nconst status = data.estado || ctx.status || null;\nconst priority = data.prioridad || null;\nconst category = data.categoria || null;\nconst subcategory = data.subcategoria || null;\nconst article = data.articulo || null;\n\nconst descriptionText = redact(stripHtml(data.descripcion_html || ''));\nconst resolutionText = redact(stripHtml(data.resolucion_html || ''));\n\nconst comments = Array.isArray(data.comentarios) ? data.comentarios : [];\nconst history = Array.isArray(data.historial) ? data.historial : [];\nconst attachments = Array.isArray(data.adjuntos) ? data.adjuntos : [];\n\nconst commentsText = comments\n  .map((c) => {\n    const date = c.created_at || c.fecha || '';\n    const author = c.autor || c.usuario || c.user_name || '';\n    const body = redact(stripHtml(c.comentario_html || c.comentario || ''));\n    return [date ? `[${date}]` : '', author ? `[${author}]` : '', body]\n      .filter(Boolean)\n      .join(' ');\n  })\n  .filter(Boolean);\n\nconst historyText = history\n  .map((h) => {\n    const date = h.created_at || h.fecha || '';\n    const type = h.event_type || '';\n    const message = redact(stripHtml(h.message || ''));\n    return ['-', date ? `[${date}]` : '', type ? `${type}:` : '', message]\n      .filter(Boolean)\n      .join(' ');\n  })\n  .filter(Boolean);\n\nconst content = [\n  idItil ? `[TICKET] ${idItil}` : '[TICKET]',\n  `ID interno: ${ctx.ticket_id}`,\n  status ? `Estado: ${status}` : '',\n  priority ? `Prioridad: ${priority}` : '',\n  category ? `Categoría: ${category}` : '',\n  subcategory ? `Subcategoría: ${subcategory}` : '',\n  article ? `Artículo: ${article}` : '',\n  title ? `Asunto: ${title}` : '',\n  descriptionText ? `Descripción:\\n${descriptionText}` : '',\n  resolutionText ? `Resolución:\\n${resolutionText}` : '',\n  commentsText.length ? `Comentarios:\\n${commentsText.map(x => `- ${x}`).join('\\n')}` : '',\n  historyText.length ? `Historial:\\n${historyText.join('\\n')}` : ''\n].filter(Boolean).join('\\n\\n');\n\nreturn {\n  json: {\n    content,\n    metadata: {\n      source_id: ctx.source_id,\n      entity_type: 'ticket',\n      title,\n      file_name: null,\n      version_key: ctx.version_key,\n      document_origin: 'tickets_api',\n      updated_at: ctx.updated_at,\n      status: status || 'active',\n      id_itil: idItil,\n      category,\n      priority,\n      has_attachments: attachments.length > 0\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        -848
+      ],
+      "id": "24a926b4-ad00-4258-ad59-479ed85f05ed",
+      "name": "Code - Preparar Documento Ticket Updated"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "collection": "sync_snapshot",
+        "query": "={{ JSON.stringify({\n  entity_type: \"ticket\",\n  entity_id: $json.entity_id\n}) }}"
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        1632,
+        -464
+      ],
+      "id": "12f8b8d5-3d87-42d8-90b6-1c6b17a54aaf",
+      "name": "MongoDB - Delete Ticket Snapshot",
+      "credentials": {
+        "mongoDb": {
+          "id": "OVY43bDYYcqEdR6l",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "batchSize": 512,
+          "stripNewLines": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        1856,
+        -816
+      ],
+      "id": "9993c522-5202-4c82-aeef-1e46503fafa2",
+      "name": "Embeddings Mistral Cloud - Ticket",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "xKrV6l6INLcWYpnQ",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chunkSize": 1200,
+        "chunkOverlap": 200,
+        "options": {
+          "splitCode": "markdown"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        2064,
+        -608
+      ],
+      "id": "47d45c4a-75dd-46d2-9d22-12d1e47c9285",
+      "name": "Recursive Character Text Splitter - Ticket"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "GO"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -384,
+        -848
+      ],
+      "id": "0523ba4a-f8af-44e0-a2f6-e30c05ca5184",
+      "name": "Desde el General"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Get Tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Get Tickets": {
+      "main": [
+        [
+          {
+            "node": "Code - Normalize Current Tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Normalize Current Tickets": {
+      "main": [
+        [
+          {
+            "node": "MongoDB - Load Previous Tickets Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MongoDB - Load Previous Tickets Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Code - Compare Current Vs Previous Tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Compare Current Vs Previous Tickets": {
+      "main": [
+        [
+          {
+            "node": "Code - Build Ticket Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Build Ticket Events": {
+      "main": [
+        [
+          {
+            "node": "Code - Prepare Snapshot Ops Tickets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Switch - Evento Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Evento Ticket": {
+      "main": [
+        [
+          {
+            "node": "Code - Preparar Contexto Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code - Preparar Delete Ticket",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code - Preparar Contexto Ticket Updated",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code - Preparar Delete Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Prepare Snapshot Ops Tickets": {
+      "main": [
+        [
+          {
+            "node": "IF - Is Upsert Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Preparar Contexto Ticket": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Get Ticket Detail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Preparar Delete Ticket": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Qdrant Delete Ticket By Source Id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Preparar Contexto Ticket Updated": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Get Ticket Detail Updated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Is Upsert Ticket": {
+      "main": [
+        [
+          {
+            "node": "MongoDB - Upsert Ticket Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF - Is Delete Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Get Ticket Detail": {
+      "main": [
+        [
+          {
+            "node": "Code - Preparar Documento Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Qdrant Delete Ticket By Source Id": {
+      "main": [
+        []
+      ]
+    },
+    "HTTP Request - Get Ticket Detail Updated": {
+      "main": [
+        [
+          {
+            "node": "Code - Preparar Documento Ticket Updated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MongoDB - Upsert Ticket Snapshot": {
+      "main": [
+        []
+      ]
+    },
+    "IF - Is Delete Ticket": {
+      "main": [
+        [
+          {
+            "node": "MongoDB - Delete Ticket Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Preparar Documento Ticket": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Preparar Documento Ticket Updated": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Mistral Cloud - Ticket": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter - Ticket": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Desde el General": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Get Tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "56b70632-d779-479b-9760-144f7cdb0301",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b50312b720dbf6865de933d25e1e21474e0709a5e5dfd64185798427a56f6c9b"
+  },
+  "id": "s3eQ1ed49IUTakAH",
+  "tags": []
+}

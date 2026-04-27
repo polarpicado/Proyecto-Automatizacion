@@ -1,0 +1,867 @@
+{
+  "name": "WF_SYNC_SOLUTIONS_DETECT",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        -656
+      ],
+      "id": "9cc84658-2a00-4245-bedd-0cebdce37ca8",
+      "name": "Manual Trigger"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "rag_repo",
+          "mode": "list",
+          "cachedResultName": "rag_repo"
+        },
+        "options": {
+          "collectionConfig": "",
+          "contentPayloadKey": "content",
+          "metadataPayloadKey": "metadata"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        1888,
+        -1040
+      ],
+      "id": "be5ae2c7-0d27-40d5-99bc-21122ae92f54",
+      "name": "Qdrant Vector Store",
+      "credentials": {
+        "qdrantApi": {
+          "id": "amgwWYc7SWHHWb3h",
+          "name": "Qdrant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.content }}",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "source_id",
+                "value": "={{ $json.metadata.source_id }}"
+              },
+              {
+                "name": "entity_type",
+                "value": "={{ $json.metadata.entity_type }}"
+              },
+              {
+                "name": "title",
+                "value": "={{ $json.metadata.title }}"
+              },
+              {
+                "name": "file_name",
+                "value": "={{ $json.metadata.file_name }}"
+              },
+              {
+                "name": "version_key",
+                "value": "={{ $json.metadata.version_key }}"
+              },
+              {
+                "name": "document_origin",
+                "value": "={{ $json.metadata.document_origin }}"
+              },
+              {
+                "name": "updated_at",
+                "value": "={{ $json.metadata.updated_at }}"
+              },
+              {
+                "name": "status",
+                "value": "={{ $json.metadata.status }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1984,
+        -816
+      ],
+      "id": "10b190c3-d6f3-4182-a025-bba3ad42cbbc",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "url": "http://fastapi:8000/solutions",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -160,
+        -752
+      ],
+      "id": "d8d48f5a-7db2-4450-b212-316aa2c11247",
+      "name": "HTTP Request - Get Solutions"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.all();\n\nlet solutions = [];\nfor (const item of input) {\n  const data = item.json;\n\n  if (Array.isArray(data)) {\n    solutions.push(...data);\n  } else if (Array.isArray(data.items)) {\n    solutions.push(...data.items);\n  } else if (Array.isArray(data.solutions)) {\n    solutions.push(...data.solutions);\n  } else if (Array.isArray(data.data)) {\n    solutions.push(...data.data);\n  } else if (data && data._id) {\n    solutions.push(data);\n  }\n}\n\nconst now = new Date().toISOString();\n\nreturn solutions.map((s) => {\n  return {\n    json: {\n      entity_type: 'solution',\n      entity_id: String(s._id),\n      title: s.titulo || null,\n      folder: s.carpeta || null,\n      description_html: s.descripcion_html || '',\n      created_at: s.created_at || null,\n      updated_at: s.updated_at || null,\n      version_key: String(s.updated_at || ''),\n      snapshot_status: 'active',\n      last_seen_at: now,\n      raw: s\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        -752
+      ],
+      "id": "5f00b055-cd30-4a36-acff-9457168e520c",
+      "name": "Code - Normalize Current Solutions"
+    },
+    {
+      "parameters": {
+        "collection": "sync_snapshot",
+        "options": {},
+        "query": "{\n  \"entity_type\": \"solution\"\n}"
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        288,
+        -752
+      ],
+      "id": "35f87cb7-c6d0-4028-841e-24ed986c1497",
+      "name": "MongoDB - Load Previous Solution Snapshot",
+      "alwaysOutputData": true,
+      "credentials": {
+        "mongoDb": {
+          "id": "OVY43bDYYcqEdR6l",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const currentItems = $('Code - Normalize Current Solutions').all().map(i => i.json);\n\nconst previousItems = $('MongoDB - Load Previous Solution Snapshot')\n  .all()\n  .map(i => i.json)\n  .filter(i => i && i.entity_id);\n\nconst currentMap = new Map();\nconst previousMap = new Map();\n\nfor (const item of currentItems) {\n  currentMap.set(item.entity_id, item);\n}\n\nfor (const item of previousItems) {\n  previousMap.set(item.entity_id, item);\n}\n\nconst results = [];\n\nfor (const [entityId, current] of currentMap.entries()) {\n  const previous = previousMap.get(entityId);\n\n  if (!previous) {\n    results.push({\n      json: {\n        entity_type: 'solution',\n        entity_id: entityId,\n        diff_type: 'created',\n        current,\n        previous: null\n      }\n    });\n    continue;\n  }\n\n  if (current.version_key !== previous.version_key) {\n    results.push({\n      json: {\n        entity_type: 'solution',\n        entity_id: entityId,\n        diff_type: 'updated',\n        current,\n        previous\n      }\n    });\n  }\n}\n\nfor (const [entityId, previous] of previousMap.entries()) {\n  if (!currentMap.has(entityId)) {\n    results.push({\n      json: {\n        entity_type: 'solution',\n        entity_id: entityId,\n        diff_type: 'deleted',\n        current: null,\n        previous\n      }\n    });\n  }\n}\n\n// 🔥 CLAVE: evitar flujo muerto\nif (results.length === 0) {\n  return [\n    {\n      json: {\n        entity_type: 'solution',\n        diff_type: 'no_changes'\n      }\n    }\n  ];\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        -752
+      ],
+      "id": "212f8179-b8be-4591-b55c-61d0a1a87612",
+      "name": "Code - Compare Current Vs Previous Solutions"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const row = $input.item.json;\n\nlet eventType = null;\nlet eventTs = new Date().toISOString();\nlet versionKey = null;\nlet payload = null;\n\nif (row.diff_type === 'created') {\n  eventType = 'solution_created';\n  eventTs = row.current?.updated_at || row.current?.created_at || eventTs;\n  versionKey = row.current?.version_key || null;\n  payload = row.current;\n}\n\nif (row.diff_type === 'updated') {\n  eventType = 'solution_updated';\n  eventTs = row.current?.updated_at || eventTs;\n  versionKey = row.current?.version_key || null;\n  payload = {\n    current: row.current,\n    previous: row.previous\n  };\n}\n\nif (row.diff_type === 'deleted') {\n  eventType = 'solution_deleted';\n  versionKey = row.previous?.version_key || null;\n  payload = row.previous;\n}\n\nreturn {\n  json: {\n    entity_type: 'solution',\n    entity_id: row.entity_id,\n    event_type: eventType,\n    event_ts: eventTs,\n    version_key: versionKey,\n    correlation_key: `solution|${row.entity_id}|${eventType}|${eventTs}`,\n    payload\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        -752
+      ],
+      "id": "15497e2b-30ac-460b-b1aa-c9ff757d266e",
+      "name": "Code - Build Solution Events"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ev = $input.item.json;\n\nif (ev.event_type === 'solution_created') {\n  const data = ev.payload;\n\n  return {\n    json: {\n      op: 'upsert',\n      entity_type: 'solution',\n      entity_id: ev.entity_id,\n      version_key: ev.version_key,\n      status: 'active',\n      title: data.title,\n      folder: data.folder,\n      description_html: data.description_html,\n      created_at: data.created_at,\n      updated_at: data.updated_at,\n      last_seen_at: new Date().toISOString(),\n      raw: data.raw\n    }\n  };\n}\n\nif (ev.event_type === 'solution_updated') {\n  const data = ev.payload.current;\n\n  return {\n    json: {\n      op: 'upsert',\n      entity_type: 'solution',\n      entity_id: ev.entity_id,\n      version_key: ev.version_key,\n      status: 'active',\n      title: data.title,\n      folder: data.folder,\n      description_html: data.description_html,\n      created_at: data.created_at,\n      updated_at: data.updated_at,\n      last_seen_at: new Date().toISOString(),\n      raw: data.raw\n    }\n  };\n}\n\nif (ev.event_type === 'solution_deleted') {\n  return {\n    json: {\n      op: 'delete',\n      entity_type: 'solution',\n      entity_id: ev.entity_id\n    }\n  };\n}\n\nreturn {\n  json: {\n    op: 'ignore'\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        -560
+      ],
+      "id": "d8a05e33-4a8c-413c-8825-6e846e466794",
+      "name": "Code - Prepare Snapshot Ops Solutions"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0def40ca-38f4-4c8b-acd4-7ca7ca8f2c1a",
+              "leftValue": "={{ $json.op }}",
+              "rightValue": "upsert",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1184,
+        -560
+      ],
+      "id": "a26f1c75-b30e-4d59-aebd-37bbbca46ae3",
+      "name": "IF - Is Upsert Solution"
+    },
+    {
+      "parameters": {
+        "operation": "findOneAndUpdate",
+        "collection": "sync_snapshot",
+        "updateKey": "entity_id",
+        "fields": "=entity_type,entity_id,version_key,status,title,folder,description_html,created_at,updated_at,last_seen_at,raw",
+        "upsert": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        1408,
+        -656
+      ],
+      "id": "b8f679e4-9f68-4284-9e43-e6c0b3c913dd",
+      "name": "MongoDB - Upsert Solution Snapshot",
+      "credentials": {
+        "mongoDb": {
+          "id": "OVY43bDYYcqEdR6l",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "aec87084-a439-4906-b21b-aed980ac5816",
+              "leftValue": "={{ $json.op }}",
+              "rightValue": "delete",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1408,
+        -464
+      ],
+      "id": "afd40262-eecf-442c-8d4d-f52148916975",
+      "name": "IF - Is Delete Solution"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "collection": "sync_snapshot",
+        "query": "={{ JSON.stringify({\n  entity_type: \"solution\",\n  entity_id: $json.entity_id\n}) }}"
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        1632,
+        -464
+      ],
+      "id": "76090731-c6e3-4ba2-b5ce-10453cb63deb",
+      "name": "MongoDB - Delete Solution Snapshot",
+      "credentials": {
+        "mongoDb": {
+          "id": "OVY43bDYYcqEdR6l",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.event_type }}",
+                    "rightValue": "solution_created",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "882b1f65-eb29-4a4c-833d-0f4e685a76cd"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "solution_created"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "fefe47bc-2516-40b2-8713-594a35fd94e1",
+                    "leftValue": "={{ $json.event_type }}",
+                    "rightValue": "solution_updated",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "solution_updated"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "dcf29aa4-fec0-4a0b-b4db-fe1371defee0",
+                    "leftValue": "={{ $json.event_type }}",
+                    "rightValue": "solution_deleted",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "solution_deleted"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        960,
+        -1056
+      ],
+      "id": "b6898595-5d99-4127-8c49-20f2a71eb532",
+      "name": "Switch - Evento Solución"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ev = $input.item.json;\nconst data = ev.payload;\n\nreturn {\n  json: {\n    event_type: ev.event_type,\n    entity_type: 'solution',\n    entity_id: ev.entity_id,\n    source_id: `sol:${ev.entity_id}`,\n    solution_id: ev.entity_id,\n    title: data.title,\n    folder: data.folder || null,\n    updated_at: data.updated_at || null,\n    version_key: data.version_key || null\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        -1232
+      ],
+      "id": "bca9e8ab-8c1c-4058-a4bd-b2c343ad957b",
+      "name": "Code - Preparar Contexto Solución"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ev = $input.item.json;\n\nreturn {\n  json: {\n    event_type: ev.event_type,\n    entity_type: 'solution',\n    entity_id: ev.entity_id,\n    source_id: `sol:${ev.entity_id}`\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        -1040
+      ],
+      "id": "380dbfaf-6d14-490e-a805-70888153239d",
+      "name": "Code - Preparar Delete Solución"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://qdrant:6333/collections/rag_repo/points/delete",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"filter\": {\n    \"must\": [\n      {\n        \"key\": \"metadata.source_id\",\n        \"match\": {\n          \"value\": $json.source_id\n        }\n      }\n    ]\n  }\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1408,
+        -1040
+      ],
+      "id": "b78f0e3a-eb6d-4fb8-bb9e-7494ac38d1ff",
+      "name": "HTTP Request - Qdrant Delete Solution By Source Id"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ev = $input.item.json;\nconst data = ev.payload.current;\n\nreturn {\n  json: {\n    event_type: ev.event_type,\n    entity_type: 'solution',\n    entity_id: ev.entity_id,\n    source_id: `sol:${ev.entity_id}`,\n    solution_id: ev.entity_id,\n    title: data.title,\n    folder: data.folder || null,\n    updated_at: data.updated_at || null,\n    version_key: data.version_key || null\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        -848
+      ],
+      "id": "1108ca2b-c74f-4556-8a29-ab5b1d60fb5a",
+      "name": "Code - Preparar Contexto Solución Updated"
+    },
+    {
+      "parameters": {
+        "options": {
+          "batchSize": 512,
+          "stripNewLines": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        1856,
+        -816
+      ],
+      "id": "41f48332-b224-4638-b80f-3ca89923080c",
+      "name": "Embeddings Mistral Cloud - Solución",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "xKrV6l6INLcWYpnQ",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chunkSize": 1200,
+        "chunkOverlap": 200,
+        "options": {
+          "splitCode": "markdown"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        2064,
+        -608
+      ],
+      "id": "d202b5b7-8845-4f06-b889-110bcb7ec485",
+      "name": "Recursive Character Text Splitter - Solución"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'http://fastapi:8000/solutions/' + $json.solution_id }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"file_name\": $json.file_name\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1408,
+        -1232
+      ],
+      "id": "bbf2f55a-61e9-48c8-bd52-ea63901b918c",
+      "name": "HTTP Request - Get Solution Detail"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ctx = $('Code - Preparar Contexto Solución').first().json;\nconst data = $input.item.json;\n\nconst htmlRaw =\n  data.descripcion_html ||\n  data.description_html ||\n  '';\n\nconst cleanText = htmlRaw\n  .replace(/<br\\s*\\/?>/gi, '\\n')\n  .replace(/<\\/p>/gi, '\\n\\n')\n  .replace(/<[^>]+>/g, '')\n  .replace(/\\n\\s*\\n/g, '\\n\\n')\n  .trim();\n\nconst title =\n  data.titulo ||\n  data.title ||\n  ctx.title ||\n  '';\n\nconst folder =\n  data.carpeta ||\n  data.folder ||\n  ctx.folder ||\n  '';\n\nconst content = [\n  title ? `# ${title}` : '',\n  folder ? `**Carpeta:** ${folder}` : '',\n  cleanText\n].filter(Boolean).join('\\n\\n');\n\nreturn {\n  json: {\n    content,\n    metadata: {\n      source_id: ctx.source_id,\n      entity_type: 'solution',\n      title,\n      file_name: null,\n      version_key: ctx.version_key,\n      document_origin: 'solutions_api',\n      updated_at: ctx.updated_at,\n      status: 'active'\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        -1232
+      ],
+      "id": "0828fe31-fb95-430b-b1b1-9a6ae36c8686",
+      "name": "Code - Preparar Documento Solución"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'http://fastapi:8000/solutions/' + $json.solution_id }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"file_name\": $json.file_name\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1408,
+        -848
+      ],
+      "id": "a62c2f43-2a88-4607-874d-ed4cb5ac8ed7",
+      "name": "HTTP Request - Get Solution Detail Updated"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ctx = $('Code - Preparar Contexto Solución Updated').first().json;\nconst data = $input.item.json;\n\n// --------- LIMPIEZA HTML → TEXTO ---------\nconst htmlRaw =\n  data.descripcion_html ||\n  data.description_html ||\n  '';\n\nconst cleanText = htmlRaw\n  .replace(/<br\\s*\\/?>/gi, '\\n')\n  .replace(/<\\/p>/gi, '\\n\\n')\n  .replace(/<[^>]+>/g, '') // remove all tags\n  .replace(/\\n\\s*\\n/g, '\\n\\n')\n  .trim();\n\n// --------- CAMPOS ---------\nconst title =\n  data.titulo ||\n  data.title ||\n  ctx.title ||\n  '';\n\nconst folder =\n  data.carpeta ||\n  data.folder ||\n  ctx.folder ||\n  '';\n\n// --------- MARKDOWN FINAL ---------\nconst content = [\n  title ? `# ${title}` : '',\n  folder ? `**Carpeta:** ${folder}` : '',\n  cleanText\n].filter(Boolean).join('\\n\\n');\n\n// --------- OUTPUT ---------\nreturn {\n  json: {\n    content,\n    metadata: {\n      source_id: ctx.source_id,\n      entity_type: 'solution',\n      title,\n      file_name: null,\n      version_key: ctx.version_key,\n      document_origin: 'solutions_api',\n      updated_at: ctx.updated_at,\n      status: 'active'\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        -848
+      ],
+      "id": "fecb0fb4-f0d5-4cd5-bddb-e2afd6b7ff86",
+      "name": "Code - Preparar Documento Solución Updated"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "GO"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -384,
+        -848
+      ],
+      "id": "a37d5507-efff-4c6c-840c-8549e67995a5",
+      "name": "Desde el General"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Get Solutions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Get Solutions": {
+      "main": [
+        [
+          {
+            "node": "Code - Normalize Current Solutions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Normalize Current Solutions": {
+      "main": [
+        [
+          {
+            "node": "MongoDB - Load Previous Solution Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MongoDB - Load Previous Solution Snapshot": {
+      "main": [
+        [
+          {
+            "node": "Code - Compare Current Vs Previous Solutions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Compare Current Vs Previous Solutions": {
+      "main": [
+        [
+          {
+            "node": "Code - Build Solution Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Build Solution Events": {
+      "main": [
+        [
+          {
+            "node": "Code - Prepare Snapshot Ops Solutions",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Switch - Evento Solución",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Prepare Snapshot Ops Solutions": {
+      "main": [
+        [
+          {
+            "node": "IF - Is Upsert Solution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Is Upsert Solution": {
+      "main": [
+        [
+          {
+            "node": "MongoDB - Upsert Solution Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF - Is Delete Solution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MongoDB - Upsert Solution Snapshot": {
+      "main": [
+        []
+      ]
+    },
+    "IF - Is Delete Solution": {
+      "main": [
+        [
+          {
+            "node": "MongoDB - Delete Solution Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Evento Solución": {
+      "main": [
+        [
+          {
+            "node": "Code - Preparar Contexto Solución",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code - Preparar Delete Solución",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code - Preparar Contexto Solución Updated",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code - Preparar Delete Solución",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Preparar Contexto Solución": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Get Solution Detail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Preparar Delete Solución": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Qdrant Delete Solution By Source Id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Qdrant Delete Solution By Source Id": {
+      "main": [
+        []
+      ]
+    },
+    "Code - Preparar Contexto Solución Updated": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Get Solution Detail Updated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Mistral Cloud - Solución": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter - Solución": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Get Solution Detail": {
+      "main": [
+        [
+          {
+            "node": "Code - Preparar Documento Solución",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Preparar Documento Solución": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Get Solution Detail Updated": {
+      "main": [
+        [
+          {
+            "node": "Code - Preparar Documento Solución Updated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Preparar Documento Solución Updated": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Desde el General": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Get Solutions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "be222720-c3ff-4e1d-8d17-43a6004f2830",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b50312b720dbf6865de933d25e1e21474e0709a5e5dfd64185798427a56f6c9b"
+  },
+  "id": "u7nUpgISLp9oxeaV",
+  "tags": []
+}

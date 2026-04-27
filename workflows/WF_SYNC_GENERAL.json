@@ -1,0 +1,188 @@
+{
+  "name": "WF_SYNC_GENERAL",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "bfa84aef-8271-4fd1-ac27-dcbae95f3319",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "OIUW8GZY4Rc5Q9S5",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/OIUW8GZY4Rc5Q9S5",
+          "cachedResultName": "WF_SYNC_FILES_DETECT"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "GO": "true"
+          },
+          "matchingColumns": [
+            "GO"
+          ],
+          "schema": [
+            {
+              "id": "GO",
+              "displayName": "GO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        -144
+      ],
+      "id": "4d426d98-111d-40eb-bd58-f8d91010b7e0",
+      "name": "Sincronización Repo"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "u7nUpgISLp9oxeaV",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/u7nUpgISLp9oxeaV",
+          "cachedResultName": "WF_SYNC_SOLUTIONS_DETECT"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "GO": "true"
+          },
+          "matchingColumns": [
+            "GO"
+          ],
+          "schema": [
+            {
+              "id": "GO",
+              "displayName": "GO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        0
+      ],
+      "id": "bc49a899-b662-41ed-bf8c-c1d7ad46b77f",
+      "name": "Sincronización Soluciones"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "s3eQ1ed49IUTakAH",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/s3eQ1ed49IUTakAH",
+          "cachedResultName": "WF_SYNC_TICKETS_DETECT"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "GO": "true"
+          },
+          "matchingColumns": [
+            "GO"
+          ],
+          "schema": [
+            {
+              "id": "GO",
+              "displayName": "GO",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        176
+      ],
+      "id": "93b39625-97cf-446e-8a86-b12b8f7bcdec",
+      "name": "Sincronización Tickets"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Sincronización Repo",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Sincronización Soluciones",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Sincronización Tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d6108928-ed13-41e6-b24c-b3f1a6484d57",
+  "meta": {
+    "instanceId": "b50312b720dbf6865de933d25e1e21474e0709a5e5dfd64185798427a56f6c9b"
+  },
+  "id": "VnWbARt4dCqdS4Uo",
+  "tags": []
+}
